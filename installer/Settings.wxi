@@ -159,4 +159,7 @@
     <?define VersionSubDir = "$(env.MumbleVersionSubDir)" ?>
   <?endif ?>
 
+  <?ifndef env.MumbleNoMurmur ?>
+    <?define Murmur = true ?>
+  <?endif ?>
 </Include>

@@ -123,6 +123,7 @@
         <RegistryValue Root="HKCR" Key="mumble\shell\open\command" Value="[#mumble.exe] &quot;%1&quot;" Type="string" />
       </Component>
 
+      <?ifdef Murmur ?>
       <Component Id="MurmurDesktopShortcutComponent" Guid="$(var.MurmurDesktopShortcutGuid)" KeyPath="yes">
         <Shortcut Id="MurmurDesktopShortcut"
                   Directory="DesktopFolder"
@@ -144,6 +145,7 @@
       <Component Id="Murmur.ice">
         <File Source="$(var.SourceDir)\src\murmur\Murmur.ice" KeyPath="yes" />
       </Component>
+      <?endif ?>
 
       <?ifdef VersionSubDir ?>
         <?ifdef RedistDirVC12 ?>

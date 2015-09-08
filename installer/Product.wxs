@@ -4,7 +4,7 @@
   <?include "Settings.wxi" ?>
 
   <Product Id="*" Name="$(var.ProductName) $(var.ProductVersion)" Language="!(loc.LANG)" Version="$(var.ProductVersion)" Manufacturer="$(var.ProductManufacturer)" UpgradeCode="$(var.ProductUpgradeCode)">
-    <Package Id="*" InstallerVersion="300" Compressed="yes" Languages="0,1028,1029,1030,1031,1033,1034,1035,1036,1040,1041,1043,1044,1045,1046,1049,1053,1055,2052" />
+    <Package Id="*" InstallerVersion="405" Compressed="yes" Languages="0,1028,1029,1030,1031,1033,1034,1035,1036,1040,1041,1043,1044,1045,1046,1049,1053,1055,2052" />
 
     <Property Id='NSISINSTALL'>
       <RegistrySearch Id='NSISSearch' Win64='no' Root='HKLM' Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Mumble' Type='directory' Name='InstallLocation' />
@@ -74,7 +74,9 @@
     </Directory>
 
     <Icon Id="mumble.ico" SourceFile="$(var.SourceDir)\icons\mumble.ico"/>
+    <?ifdef Murmur ?>
     <Icon Id="murmur.ico" SourceFile="$(var.SourceDir)\icons\murmur.ico"/>
+    <?endif ?>
 
     <DirectoryRef Id="ApplicationProgramsFolder">
       <Component Id="ApplicationProgramsFolderRemovalComponent" Guid="$(var.ApplicationProgramsFolderRemovalComponentGuid)">
@@ -186,6 +188,7 @@
     </Feature>
 
     <Feature Id="Murmur" Title="!(loc.MUMBLE_SEC_MURMUR)" Description="!(loc.DESC_SectionMurmur)" Level="1000" ConfigurableDirectory="INSTALLDIR" Display="expand">
+      <?ifdef Murmur ?>
       <?ifndef StaticBuild ?>
         <?ifdef IceDir ?>
           <ComponentRef Id="bzip2.dll" />
@@ -212,7 +215,7 @@
       <Feature Id="MurmurDesktopShortcutFeature" Title="!(loc.MUMBLE_SEC_DesktopShortcut)" Description="!(loc.DESC_DesktopShortcut)"  InstallDefault="followParent" AllowAdvertise="no">
         <ComponentRef Id="MurmurDesktopShortcutComponent" />
       </Feature>
-      
+      <?endif ?>
     </Feature>
 
     <Feature Id="Libraries" Title="Required Libraries" Display="hidden" AllowAdvertise="no" Absent="disallow" Level="1">
