@@ -8,9 +8,6 @@
       <Component Id="link.dll">
         <File Source="$(var.SourceDir)\release\plugins\link.dll" KeyPath="yes" />
       </Component>
-      <Component Id="manual.dll">
-        <File Source="$(var.SourceDir)\release\plugins\manual.dll" KeyPath="yes" />
-      </Component>
       <Component Id="aoc.dll">
         <File Source="$(var.SourceDir)\release\plugins\aoc.dll" KeyPath="yes" />
       </Component>
@@ -34,6 +31,9 @@
       </Component>
       <Component Id="bfheroes.dll">
         <File Source="$(var.SourceDir)\release\plugins\bfheroes.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="bf4_x86.dll">
+        <File Source="$(var.SourceDir)\release\plugins\bf4_x86.dll" KeyPath="yes" />
       </Component>
       <Component Id="blacklight.dll">
         <File Source="$(var.SourceDir)\release\plugins\blacklight.dll" KeyPath="yes" />
@@ -77,6 +77,9 @@
       <Component Id="etqw.dll">
         <File Source="$(var.SourceDir)\release\plugins\etqw.dll" KeyPath="yes" />
       </Component>
+      <Component Id="ffxiv.dll">
+        <File Source="$(var.SourceDir)\release\plugins\ffxiv.dll" KeyPath="yes" />
+      </Component>
       <Component Id="gmod.dll">
         <File Source="$(var.SourceDir)\release\plugins\gmod.dll" KeyPath="yes" />
       </Component>
@@ -107,6 +110,12 @@
       <Component Id="lotro.dll">
         <File Source="$(var.SourceDir)\release\plugins\lotro.dll" KeyPath="yes" />
       </Component>
+      <Component Id="ql.dll">
+        <File Source="$(var.SourceDir)\release\plugins\ql.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="rl.dll">
+        <File Source="$(var.SourceDir)\release\plugins\rl.dll" KeyPath="yes" />
+      </Component>
       <Component Id="sr.dll">
         <File Source="$(var.SourceDir)\release\plugins\sr.dll" KeyPath="yes" />
       </Component>
@@ -131,11 +140,28 @@
       <Component Id="wow.dll">
         <File Source="$(var.SourceDir)\release\plugins\wow.dll" KeyPath="yes" />
       </Component>
+
+      <?if $(sys.BUILDARCH) = "x64" ?>
+        <Component Id="bf1.dll">
+          <File Source="$(var.SourceDir)\release\plugins\bf1.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="bf4.dll">
+          <File Source="$(var.SourceDir)\release\plugins\bf4.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="ffxiv_x64.dll">
+          <File Source="$(var.SourceDir)\release\plugins\ffxiv_x64.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="gtav.dll">
+          <File Source="$(var.SourceDir)\release\plugins\gtav.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="wow_x64.dll">
+          <File Source="$(var.SourceDir)\release\plugins\wow_x64.dll" KeyPath="yes" />
+        </Component>
+      <?endif ?>
     </DirectoryRef>
 
     <ComponentGroup Id="Plugins">
       <ComponentRef Id="link.dll" />
-      <ComponentRef Id="manual.dll" />
       <ComponentRef Id="aoc.dll" />
       <ComponentRef Id="arma2.dll" />
       <ComponentRef Id="bf1942.dll" />
@@ -144,6 +170,7 @@
       <ComponentRef Id="bf3.dll" />
       <ComponentRef Id="bfbc2.dll" />
       <ComponentRef Id="bfheroes.dll" />
+      <ComponentRef Id="bf4_x86.dll" />
       <ComponentRef Id="borderlands.dll" />
       <ComponentRef Id="borderlands2.dll" />
       <ComponentRef Id="blacklight.dll" />
@@ -158,6 +185,7 @@
       <ComponentRef Id="dods.dll" />
       <ComponentRef Id="dys.dll" />
       <ComponentRef Id="etqw.dll" />
+      <ComponentRef Id="ffxiv.dll" />
       <ComponentRef Id="gmod.dll" />
       <ComponentRef Id="gtaiv.dll" />
       <ComponentRef Id="gw.dll" />
@@ -168,6 +196,8 @@
       <ComponentRef Id="l4d2.dll" />
       <ComponentRef Id="lol.dll" />
       <ComponentRef Id="lotro.dll" />
+      <ComponentRef Id="ql.dll" />
+      <ComponentRef Id="rl.dll" />
       <ComponentRef Id="sr.dll" />
       <ComponentRef Id="sto.dll" />
       <ComponentRef Id="tf2.dll" />
@@ -176,6 +206,14 @@
       <ComponentRef Id="ut3.dll" />
       <ComponentRef Id="wolfet.dll" />
       <ComponentRef Id="wow.dll" />
+
+      <?if $(sys.BUILDARCH) = "x64" ?>
+        <ComponentRef Id="bf1.dll" />
+        <ComponentRef Id="bf4.dll" />
+        <ComponentRef Id="ffxiv_x64.dll" />
+        <ComponentRef Id="gtav.dll" />
+        <ComponentRef Id="wow_x64.dll" />
+      <?endif ?>
     </ComponentGroup>
   </Fragment>
 </Wix>

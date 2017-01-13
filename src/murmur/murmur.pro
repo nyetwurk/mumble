@@ -1,3 +1,8 @@
+# Copyright 2005-2017 The Mumble Developers. All rights reserved.
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file at the root of the
+# Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 include(../mumble.pri)
 
 DEFINES *= MURMUR
@@ -36,8 +41,8 @@ win32 {
     QT *= widgets
   }
   RESOURCES	*= murmur.qrc
-  SOURCES *= Tray.cpp
-  HEADERS *= Tray.h
+  SOURCES *= Tray.cpp About.cpp
+  HEADERS *= Tray.h About.h
   LIBS *= -luser32
   QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)$$quote(mt.exe -nologo -updateresource:$(DESTDIR_TARGET);1 -manifest ../mumble/mumble.appcompat.manifest)
 }
@@ -45,6 +50,9 @@ win32 {
 unix {
   contains(UNAME, Linux) {
     LIBS *= -lcap
+
+    # For MumbleSSL::qsslSanityCheck()
+    LIBS *= -ldl
   }
 
   CONFIG(static):!macx {
@@ -74,28 +82,9 @@ dbus {
 }
 
 ice {
-	SLICEFILES = Murmur.ice
-
-	slice.output = ${QMAKE_FILE_BASE}.cpp
-	win32 {
-		slice.commands = slice2cpp --checksum -I\"$$ICE_PATH/slice\" ${QMAKE_FILE_NAME}
-	} else {
-		slice.commands = slice2cpp --checksum -I/usr/local/share/Ice -I/usr/share/Ice/slice -I/usr/share/slice -I/usr/share/Ice-3.4.1/slice/ -I/usr/share/Ice-3.3.1/slice/ -I/usr/share/Ice-3.4.2/slice/ -I/usr/share/Ice-3.5.0/slice/ -I/usr/share/Ice-3.5.1/slice/ ${QMAKE_FILE_NAME}
-	}
-	slice.input = SLICEFILES
-	slice.CONFIG *= no_link explicit_dependencies
-	slice.variable_out = SOURCES
-
-	sliceh.output = ${QMAKE_FILE_BASE}.h
-	sliceh.depends = ${QMAKE_FILE_BASE}.cpp
-	sliceh.commands = $$escape_expand(\\n)
-	sliceh.input = SLICEFILES
-	sliceh.CONFIG *= no_link explicit_dependencies target_predeps
-
-	QMAKE_EXTRA_COMPILERS *= slice sliceh
-
 	SOURCES *= MurmurIce.cpp
 	HEADERS *= MurmurIce.h
+
 	win32:CONFIG(debug, debug|release) {
 		LIBS *= -lIceD -lIceUtilD
 	} else {
@@ -110,10 +99,10 @@ ice {
 		} else {
 			DEFINES *= ICE_STATIC_LIBS
 			QMAKE_LIBDIR *= $$BZIP2_PATH/lib
-			equals(QMAKE_TARGET.arch, x86) {
+			equals(MUMBLE_ARCH, x86) {
 				QMAKE_LIBDIR *= $$ICE_PATH/lib
 			}
-			equals(QMAKE_TARGET.arch, x86_64) {
+			equals(MUMBLE_ARCH, x86_64) {
 				QMAKE_LIBDIR *= $$ICE_PATH/lib/x64
 			}
 			CONFIG(release, debug|release): LIBS *= -llibbz2
@@ -125,13 +114,11 @@ ice {
 	macx {
 		INCLUDEPATH *= $$(MUMBLE_PREFIX)/Ice-3.4.2/include/
 		QMAKE_LIBDIR *= $$(MUMBLE_PREFIX)/Ice-3.4.2/lib/
-		slice.commands = $$(MUMBLE_PREFIX)/Ice-3.4.2/bin/slice2cpp --checksum -I$$(MUMBLE_PREFIX)/Ice-3.4.2/slice/ Murmur.ice
 	}
 
 	CONFIG(ermine) {
 		INCLUDEPATH *= $$(MUMBLE_ICE_PREFIX)/include/
 		QMAKE_LIBDIR *= $$(MUMBLE_ICE_PREFIX)/lib/
-		slice.commands = $$(MUMBLE_ICE_PREFIX)/bin/slice2cpp --checksum -I$$(MUMBLE_ICE_PREFIX)/slice/ Murmur.ice
 	}
 
 	unix:!macx:CONFIG(static) {
@@ -139,21 +126,59 @@ ice {
 		QMAKE_LIBDIR *= /opt/Ice-3.3/lib
 		LIBS *= -lbz2
 		QMAKE_CXXFLAGS *= -fPIC
-		slice.commands = /opt/Ice-3.3/bin/slice2cpp --checksum -I/opt/Ice-3.3/slice Murmur.ice
 	}
 
 	macx:CONFIG(static) {
 		LIBS *= -lbz2 -liconv
 		QMAKE_CXXFLAGS *= -fPIC
 	}
+
+	LIBS *= -lmurmur_ice
+	INCLUDEPATH *= murmur_ice
+
+	unix {
+		QMAKE_CFLAGS *= "-isystem murmur_ice"
+		QMAKE_CXXFLAGS *= "-isystem murmur_ice"
+	}
+}
+
+grpc {
+	isEqual(QT_MAJOR_VERSION, 4) {
+		error("Murmur's gRPC support requires Qt 5")
+	}
+
+	DEFINES *= USE_GRPC
+	INCLUDEPATH *= murmur_grpc
+	LIBS *= -lmurmur_grpc
+
+	HEADERS *= MurmurGRPCImpl.h
+	SOURCES *= MurmurGRPCImpl.cpp
+
+	GRPC_WRAPPER = MurmurRPC.proto
+	grpc_wrapper.output = MurmurRPC.proto.Wrapper.cpp
+	grpc_wrapper.commands = protoc --plugin=${DESTDIR}protoc-gen-murmur-grpcwrapper -I. --murmur-grpcwrapper_out=. MurmurRPC.proto
+	grpc_wrapper.input = GRPC_WRAPPER
+	grpc_wrapper.variable_out =
+	QMAKE_EXTRA_COMPILERS += grpc_wrapper
+
+	unix {
+		QMAKE_CXXFLAGS *= -std=c++11
+		must_pkgconfig(grpc)
+		must_pkgconfig(grpc++)
+	}
 }
 
 bonjour {
 	DEFINES *= USE_BONJOUR
 
-	HEADERS *= ../bonjour/BonjourRecord.h ../bonjour/BonjourServiceRegister.h BonjourServer.h
-	SOURCES *= ../bonjour/BonjourServiceRegister.cpp BonjourServer.cpp
-	INCLUDEPATH *= ../bonjour
+	HEADERS *= \
+		../../3rdparty/qqbonjour-src/BonjourRecord.h \
+		../../3rdparty/qqbonjour-src/BonjourServiceRegister.h \
+		BonjourServer.h
+	SOURCES *= \
+		../../3rdparty/qqbonjour-src/BonjourServiceRegister.cpp \
+		BonjourServer.cpp
+	INCLUDEPATH *= ../../3rdparty/qqbonjour-src
 	win32 {
 		INCLUDEPATH *= "$$BONJOUR_PATH/include"
 		QMAKE_LIBDIR *= "$$BONJOUR_PATH/lib/win32"
@@ -161,10 +186,26 @@ bonjour {
 	}
 	unix:!macx {
 		system(pkg-config --exists avahi-compat-libdns_sd avahi-client) {
-			PKGCONFIG *= avahi-compat-libdns_sd avahi-client
+			must_pkgconfig(avahi-compat-libdns_sd)
+			must_pkgconfig(avahi-client)
 		} else {
 			LIBS *= -ldns_sd
 		}
+	}
+}
+
+# Check for QSslDiffieHellmanParameters availability, and define
+# USE_QSSLDIFFIEHELLMANPARAMETERS preprocessor if available.
+#
+# Can be disabled with no-qssldiffiehellmanparameters.
+!CONFIG(no-qssldiffiehellmanparameters):exists($$[QT_INSTALL_HEADERS]/QtNetwork/QSslDiffieHellmanParameters) {
+	# ...but only if we're inside a Mumble build environment for now.
+	# If someone decides to put a Mumble snapshot into a distro, this
+	# could break the build in the future, with newer versions of Qt,
+	# if the API of QSslDiffieHellmanParameters changes when it is
+	# upstreamed.
+	CONFIG(buildenv) {
+		DEFINES += USE_QSSLDIFFIEHELLMANPARAMETERS
 	}
 }
 

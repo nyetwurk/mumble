@@ -1,37 +1,14 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "lib.h"
 
 #include "overlay_blacklist.h"
 #include "overlay_exe/overlay_exe.h"
+
+#undef max // for std::numeric_limits<T>::max()
 
 static HANDLE hMapObject = NULL;
 static HANDLE hHookMutex = NULL;
@@ -299,7 +276,12 @@ void Pipe::checkMessage(unsigned int width, unsigned int height) {
 				}
 				break;
 			case OVERLAY_MSGTYPE_BLIT: {
-					RECT r = {omMsg.omb.x, omMsg.omb.y, omMsg.omb.x + omMsg.omb.w, omMsg.omb.y + omMsg.omb.h};
+					RECT r = {
+						static_cast<LONG>(omMsg.omb.x),
+						static_cast<LONG>(omMsg.omb.y),
+						static_cast<LONG>(omMsg.omb.x + omMsg.omb.w),
+						static_cast<LONG>(omMsg.omb.y + omMsg.omb.h)
+					};
 
 					std::vector<RECT>::iterator i = blits.begin();
 					while (i != blits.end()) {
@@ -321,8 +303,10 @@ void Pipe::checkMessage(unsigned int width, unsigned int height) {
 					uiTop = omMsg.oma.y;
 					uiRight = omMsg.oma.x + omMsg.oma.w;
 					uiBottom = omMsg.oma.y + omMsg.oma.h;
-					if (a_ucTexture)
+					if (a_ucTexture) {
 						setRect();
+						blit(0, 0, uiWidth, uiHeight);
+					}
 				}
 				break;
 			default:
@@ -586,7 +570,7 @@ static bool dllmainProcAttachCheckProcessIsBlacklisted(char procname[], char *p)
 					onwhitelist = true;
 					break;
 				}
-				pos += strlen(buffer + pos) + 1;
+				pos += static_cast<unsigned int>(strlen(buffer + pos)) + 1;
 			}
 
 			if (!onwhitelist) {
@@ -602,7 +586,7 @@ static bool dllmainProcAttachCheckProcessIsBlacklisted(char procname[], char *p)
 					bBlackListed = TRUE;
 					return true;
 				}
-				pos += strlen(buffer + pos) + 1;
+				pos += static_cast<unsigned int>(strlen(buffer + pos)) + 1;
 			}
 		}
 	} else {
@@ -641,7 +625,7 @@ static bool dllmainProcAttachCheckProcessIsBlacklisted(char procname[], char *p)
 	// Same buffersize as procname; which we copy from.
 	char fname[PROCNAMEFILEPATH_EXTENDED_BUFFER_BUFLEN];
 
-	int pathlength = p - procname;
+	size_t pathlength = static_cast<size_t>(p - procname);
 	p = fname + pathlength;
 	strncpy_s(fname, sizeof(fname), procname, pathlength + 1);
 
@@ -817,5 +801,14 @@ int GetFnOffsetInModule(voidFunc fnptr, wchar_t *refmodulepath, unsigned int ref
 
 	unsigned char *fn = reinterpret_cast<unsigned char *>(fnptr);
 	unsigned char *base = reinterpret_cast<unsigned char *>(hModule);
-	return fn - base;
+	unsigned long off = static_cast<unsigned long>(fn - base);
+
+	// XXX: convert this function to use something other than int.
+	// Issue mumble-voip/mumble#1924.
+	if (off > static_cast<unsigned long>(std::numeric_limits<int>::max())) {
+		ods("Internal overlay error: GetFnOffsetInModule() offset greater than return type can hold.");
+		return -1;
+	}
+
+	return static_cast<int>(off);
 }

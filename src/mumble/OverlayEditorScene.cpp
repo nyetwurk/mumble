@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -176,14 +151,14 @@ void OverlayEditorScene::moveAvatar() {
 }
 
 void OverlayEditorScene::moveBox() {
-	QRectF children = os.qrfAvatar | os.qrfChannel | os.qrfMutedDeafened | os.qrfUserName;
+	QRectF childrenBounds = os.qrfAvatar | os.qrfChannel | os.qrfMutedDeafened | os.qrfUserName;
 
 	bool haspen = (os.qcBoxPen != os.qcBoxFill) && (! qFuzzyCompare(os.qcBoxPen.alphaF(), static_cast<qreal>(0.0f)));
 	qreal pw = haspen ? qMax<qreal>(1.0f, os.fBoxPenWidth * uiSize * uiZoom) : 0.0f;
 	qreal pad = os.fBoxPad * uiSize * uiZoom;
 
 	QPainterPath pp;
-	pp.addRoundedRect(children.x() * uiSize * uiZoom + -pw / 2.0f - pad, children.y() * uiSize * uiZoom + -pw / 2.0f - pad, children.width() * uiSize * uiZoom + pw + 2.0f * pad, children.height() * uiSize * uiZoom + pw + 2.0f * pad, 2.0f * pw, 2.0f * pw);
+	pp.addRoundedRect(childrenBounds.x() * uiSize * uiZoom + -pw / 2.0f - pad, childrenBounds.y() * uiSize * uiZoom + -pw / 2.0f - pad, childrenBounds.width() * uiSize * uiZoom + pw + 2.0f * pad, childrenBounds.height() * uiSize * uiZoom + pw + 2.0f * pad, 2.0f * pw, 2.0f * pw);
 	qgpiBox->setPath(pp);
 	qgpiBox->setPos(0.0f, 0.0f);
 	qgpiBox->setPen(haspen ? QPen(os.qcBoxPen, pw) : Qt::NoPen);
@@ -235,14 +210,14 @@ void OverlayEditorScene::drawBackground(QPainter *p, const QRectF &rect) {
 	p->setBrushOrigin(0, 0);
 	p->fillRect(rect, backgroundBrush());
 
-	QRectF upscaled = OverlayUser::scaledRect(rect, 128.f / (uiSize * uiZoom));
+	QRectF upscaled = OverlayUser::scaledRect(rect, 128.f / static_cast<float>(uiSize * uiZoom));
 
 	{
 		int min = iroundf(upscaled.left());
 		int max = iroundf(ceil(upscaled.right()));
 
 		for (int i=min;i<=max;++i) {
-			qreal v = (i / 128.f) * uiSize * uiZoom;
+			qreal v = (i / 128) * static_cast<qreal>(uiSize * uiZoom);
 
 			if (i != 0)
 				p->setPen(QPen(QColor(128, 128, 128, 255), 0.0f));
@@ -258,7 +233,7 @@ void OverlayEditorScene::drawBackground(QPainter *p, const QRectF &rect) {
 		int max = iroundf(ceil(upscaled.bottom()));
 
 		for (int i=min;i<=max;++i) {
-			qreal v = (i / 128.f) * uiSize * uiZoom;
+			qreal v = (i / 128) * static_cast<qreal>(uiSize * uiZoom);
 
 			if (i != 0)
 				p->setPen(QPen(QColor(128, 128, 128, 255), 0.0f));
@@ -310,17 +285,17 @@ QRectF OverlayEditorScene::selectedRect() const {
 }
 
 
-void OverlayEditorScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-	QGraphicsScene::mousePressEvent(event);
+void OverlayEditorScene::mousePressEvent(QGraphicsSceneMouseEvent *e) {
+	QGraphicsScene::mousePressEvent(e);
 
-	if (event->isAccepted())
+	if (e->isAccepted())
 		return;
 
-	if (event->button() == Qt::LeftButton) {
-		event->accept();
+	if (e->button() == Qt::LeftButton) {
+		e->accept();
 
 		if (wfsHover == Qt::NoSection) {
-			qgpiSelected = childAt(event->scenePos());
+			qgpiSelected = childAt(e->scenePos());
 			if (qgpiSelected) {
 				qgriSelected->setRect(selectedRect());
 				qgriSelected->show();
@@ -329,18 +304,18 @@ void OverlayEditorScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 			}
 		}
 
-		updateCursorShape(event->scenePos());
+		updateCursorShape(e->scenePos());
 	}
 }
 
-void OverlayEditorScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-	QGraphicsScene::mouseReleaseEvent(event);
+void OverlayEditorScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e) {
+	QGraphicsScene::mouseReleaseEvent(e);
 
-	if (event->isAccepted())
+	if (e->isAccepted())
 		return;
 
-	if (event->button() == Qt::LeftButton) {
-		event->accept();
+	if (e->button() == Qt::LeftButton) {
+		e->accept();
 
 		QRectF rect = qgriSelected->rect();
 
@@ -368,21 +343,21 @@ void OverlayEditorScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
 	}
 }
 
-void OverlayEditorScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
-	QGraphicsScene::mouseMoveEvent(event);
+void OverlayEditorScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
+	QGraphicsScene::mouseMoveEvent(e);
 
-	if (event->isAccepted())
+	if (e->isAccepted())
 		return;
 
-	if (qgpiSelected && (event->buttons() & Qt::LeftButton)) {
-		event->accept();
+	if (qgpiSelected && (e->buttons() & Qt::LeftButton)) {
+		e->accept();
 
 		if (wfsHover == Qt::NoSection)
 			return;
 
-		QPointF delta = event->scenePos() - event->buttonDownScenePos(Qt::LeftButton);
+		QPointF delta = e->scenePos() - e->buttonDownScenePos(Qt::LeftButton);
 
-		bool square = event->modifiers() & Qt::ShiftModifier;
+		bool square = e->modifiers() & Qt::ShiftModifier;
 
 		QRectF orig = selectedRect();
 		switch (wfsHover) {
@@ -472,7 +447,7 @@ void OverlayEditorScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
 
 		qgriSelected->setRect(orig);
 	} else {
-		updateCursorShape(event->scenePos());
+		updateCursorShape(e->scenePos());
 	}
 }
 
@@ -529,18 +504,18 @@ void OverlayEditorScene::updateCursorShape(const QPointF &point) {
 	}
 }
 
-void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
-	QGraphicsScene::contextMenuEvent(event);
+void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *e) {
+	QGraphicsScene::contextMenuEvent(e);
 
-	if (event->isAccepted())
+	if (e->isAccepted())
 		return;
 
-	if (! event->widget())
+	if (! e->widget())
 		return;
 
-	QGraphicsPixmapItem *item = childAt(event->scenePos());
+	QGraphicsPixmapItem *item = childAt(e->scenePos());
 
-	QMenu qm(event->widget());
+	QMenu qm(e->widget());
 
 	QMenu *qmLayout = qm.addMenu(tr("Layout preset"));
 	QAction *qaLayoutLargeAvatar = qmLayout->addAction(tr("Large square avatar"));
@@ -550,7 +525,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 	QActionGroup *qagUser = new QActionGroup(&qm);
 	QAction *userOpacity[8];
 	for (int i=0;i<8;++i) {
-		qreal o = (i + 1) / 8.0f;
+		qreal o = (i + 1) / 8.0;
 
 		userOpacity[i] = new QAction(tr("%1%").arg(o * 100.0f, 0, 'f', 1), qagUser);
 		userOpacity[i]->setCheckable(true);
@@ -563,7 +538,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 	}
 
 	QAction *color = NULL;
-	QAction *font = NULL;
+	QAction *fontAction = NULL;
 	QAction *objectOpacity[8];
 	for (int i=0;i<8;++i)
 		objectOpacity[i] = NULL;
@@ -581,7 +556,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 		QMenu *qmObjTrans = qm.addMenu(tr("Object Opacity"));
 		QActionGroup *qagObject = new QActionGroup(&qm);
 		for (int i=0;i<8;++i) {
-			qreal o = (i + 1) / 8.0f;
+			qreal o = i + 1 / 8.0;
 
 			objectOpacity[i] = new QAction(tr("%1%").arg(o * 100.0f, 0, 'f', 1), qagObject);
 			objectOpacity[i]->setCheckable(true);
@@ -638,7 +613,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 
 		if ((item != qgpiAvatar) && (item != qgpiMuted)) {
 			color = qm.addAction(tr("Color..."));
-			font = qm.addAction(tr("Font..."));
+			fontAction = qm.addAction(tr("Font..."));
 		}
 	}
 
@@ -653,7 +628,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 		QActionGroup *qagPen = new QActionGroup(qmPen);
 		QActionGroup *qagPad = new QActionGroup(qmPad);
 		for (int i=0;i<4;++i) {
-			qreal v = (i) ? powf(2.0f, -10 + i) : 0.0f;
+			qreal v = (i) ? powf(2.0f, static_cast<float>(-10 + i)) : 0.0f;
 			boxpen[i] = new QAction(QString::number(i), qagPen);
 			boxpen[i]->setData(v);
 			boxpen[i]->setCheckable(true);
@@ -670,14 +645,14 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 		}
 	}
 
-	QAction *act = qm.exec(event->screenPos());
+	QAction *act = qm.exec(e->screenPos());
 
 	if (! act)
 		return;
 
 	for (int i=0;i<8;++i) {
 		if (userOpacity[i] == act) {
-			float o = act->data().toReal();
+			float o = static_cast<float>(act->data().toReal());
 			os.fUser[tsColor] = o;
 
 			qgiGroup->setOpacity(o);
@@ -735,13 +710,13 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 	}
 
 	if (act == boxpencolor) {
-		QColor qc = QColorDialog::getColor(os.qcBoxPen, event->widget(), tr("Pick pen color"), QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
+		QColor qc = QColorDialog::getColor(os.qcBoxPen, e->widget(), tr("Pick pen color"), QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
 		if (! qc.isValid())
 			return;
 		os.qcBoxPen = qc;
 		moveBox();
 	} else if (act == boxfillcolor) {
-		QColor qc = QColorDialog::getColor(os.qcBoxFill, event->widget(), tr("Pick fill color"), QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
+		QColor qc = QColorDialog::getColor(os.qcBoxFill, e->widget(), tr("Pick fill color"), QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
 		if (! qc.isValid())
 			return;
 		os.qcBoxFill = qc;
@@ -755,7 +730,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 		if (! col)
 			return;
 
-		QColor qc = QColorDialog::getColor(*col, event->widget(), tr("Pick color"), QColorDialog::DontUseNativeDialog);
+		QColor qc = QColorDialog::getColor(*col, e->widget(), tr("Pick color"), QColorDialog::DontUseNativeDialog);
 		if (! qc.isValid())
 			return;
 		qc.setAlpha(255);
@@ -765,7 +740,7 @@ void OverlayEditorScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 
 		*col = qc;
 		updateSelected();
-	} else if (act == font) {
+	} else if (act == fontAction) {
 		QFont *fontptr = (item == qgpiChannel) ? &os.qfChannel : &os.qfUserName;
 
 		qgpiSelected = NULL;

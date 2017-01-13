@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
   <?define ProductName = "Mumble" ?>
-  <?define ProductManufacturer = "The Mumble team" ?>
+  <?define ProductManufacturer = "The Mumble Developers" ?>
   <?define ProductVersion = "1.3.0" ?>
 
   <?if $(sys.BUILDARCH) = "x86" ?>
@@ -22,12 +22,6 @@
   <?define ReadMeTextGuid = 15878902-B819-4E77-8C1D-0A915D79660B ?>
   <?define ApplicationProgramsFolderRemovalComponentGuid = 0AE1745D-FF86-4D61-BAF3-44248D21D263 ?>
   <?define NSISUninstallComponentGuid = 3116B7EF-CBA3-4E0B-A2C5-0F0608038905 ?>
-
-
-  <!-- Enable the StaticBuild option if we detect MUMBLE_PREFIX in the environment -->
-  <?ifdef env.MUMBLE_PREFIX ?>
-    <?define StaticBuild = true ?>
-  <?endif ?>
 
   <!-- Defaults for values that aren't given by environment variables -->
   <?ifndef env.MumbleSourceDir ?>
@@ -96,32 +90,17 @@
     <?define ZlibDir = "$(env.MumbleZlibDir)" ?>
   <?endif ?>
   
-  <!--
-    Note: in order to use merge modules with MSVS 2013 (VCRedist 12.0),
-    you need to bump the InstallerVersion in Product.wxs to 405.
-  -->
-  <?ifndef env.MumbleMergeModuleDir ?>
-    <?ifndef env.MumbleNoMergeModule ?>
-      <?define MergeModuleDir = "C:\Program Files (x86)\Common Files\Merge Modules" ?>
-    <?endif ?>
-  <?else ?>
-    <?define MergeModuleDir = "$(env.MumbleMergeModuleDir)" ?>
-  <?endif ?>
-
-  <!-- If the MumbleNoMergeModule env var is set, prefer embedding the .DLLs directly into the installer. -->
-  <?ifdef env.MumbleNoMergeModule ?>
-    <!-- But, if the MumbleNoEmbedVCRedist env var is set, don't embed them anyway. -->
-    <?ifndef env.MumbleNoEmbedVCRedist ?>
-       <?ifndef env.MumbleRedistDirVC12 ?>
-         <?if $(sys.BUILDARCH) = "x86" ?>
-           <?define RedistDirVC12 = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\redist\x86\Microsoft.VC120.CRT" ?>
-         <?elseif $(sys.BUILDARCH) = "x64" ?>
-           <?define RedistDirVC12 = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\redist\x64\Microsoft.VC120.CRT" ?>
-         <?endif ?>
-       <?else ?>
-         <?define RedistDirVC12 = "$(env.MumbleRedistDirVC12)" ?>
+  <!-- Don't embed VCRedist files if MumbleNoEmbedVCRedist env var is set. -->
+  <?ifndef env.MumbleNoEmbedVCRedist ?>
+     <?ifndef env.MumbleRedistDirVC12 ?>
+       <?if $(sys.BUILDARCH) = "x86" ?>
+         <?define RedistDirVC12 = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\redist\x86\Microsoft.VC120.CRT" ?>
+       <?elseif $(sys.BUILDARCH) = "x64" ?>
+         <?define RedistDirVC12 = "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\redist\x64\Microsoft.VC120.CRT" ?>
        <?endif ?>
-    <?endif ?>
+     <?else ?>
+       <?define RedistDirVC12 = "$(env.MumbleRedistDirVC12)" ?>
+     <?endif ?>
   <?endif ?>
 
   <?define Win81SDKDir = "C:\Program Files (x86)\Windows Kits\8.1" ?>

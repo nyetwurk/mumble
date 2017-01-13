@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 /* Copyright (C) 2010-2013, Benjamin Jemlich <pcgod@users.sourceforge.net>
    Copyright (C) 2011-2013, Nye Liu <nyet@nyet.org>
    Copyright (C) 2011-2013, Kissaki <kissaki@gmx.de>
@@ -32,10 +37,9 @@
 
 #include "lib.h"
 #include "D11StateBlock.h"
-#include "overlay11.hex"
-#include "d3dx11effect.h"
+#include "overlay11.vs.h"
+#include "overlay11.ps.h"
 #include <d3d11.h>
-#include <d3dx11.h>
 #include <time.h>
 
 D3D11Data *d3d11 = NULL;
@@ -50,9 +54,22 @@ typedef HRESULT(__stdcall *D3D11CreateDeviceAndSwapChainType)(IDXGIAdapter *, D3
 typedef ULONG(__stdcall *AddRefType)(ID3D11Device *);
 typedef ULONG(__stdcall *ReleaseType)(ID3D11Device *);
 
+struct SimpleVec3 {
+	FLOAT x;
+	FLOAT y;
+	FLOAT z;
+	SimpleVec3(FLOAT _x, FLOAT _y, FLOAT _z) : x(_x), y(_y), z(_z) {}
+};
+
+struct SimpleVec2 {
+	FLOAT x;
+	FLOAT y;
+	SimpleVec2(FLOAT _x, FLOAT _y) : x(_x), y(_y) {}
+};
+
 struct SimpleVertex {
-	D3DXVECTOR3 Pos;
-	D3DXVECTOR2 Tex;
+	SimpleVec3 Pos;
+	SimpleVec2 Tex;
 };
 
 static const int VERTEXBUFFER_SIZE = 4 * sizeof(SimpleVertex);
@@ -75,9 +92,8 @@ class D11State: protected Pipe {
 		D11StateBlock *pOrigStateBlock;
 		D11StateBlock *pMyStateBlock;
 		ID3D11RenderTargetView *pRTV;
-		ID3DX11Effect *pEffect;
-		ID3DX11EffectTechnique *pTechnique;
-		ID3DX11EffectShaderResourceVariable * pDiffuseTexture;
+		ID3D11VertexShader *pVertexShader;
+		ID3D11PixelShader *pPixelShader;
 		ID3D11InputLayout *pVertexLayout;
 		ID3D11Buffer *pVertexBuffer;
 		ID3D11Buffer *pIndexBuffer;
@@ -116,9 +132,6 @@ D11State::D11State(IDXGISwapChain *pSwapChain, ID3D11Device *pDevice)
 	pOrigStateBlock = NULL;
 	pMyStateBlock = NULL;
 	pRTV = NULL;
-	pEffect = NULL;
-	pTechnique = NULL;
-	pDiffuseTexture = NULL;
 	pVertexLayout = NULL;
 	pVertexBuffer = NULL;
 	pIndexBuffer = NULL;
@@ -139,7 +152,7 @@ void D11State::blit(unsigned int x, unsigned int y, unsigned int w, unsigned int
 
 	ods("D3D11: Blit %d %d %d %d", x, y, w, h);
 
-	if (! pTexture || ! pSRView)
+	if (! pTexture || ! pSRView || uiLeft == uiRight)
 		return;
 
 	D3D11_MAPPED_SUBRESOURCE mappedTex;
@@ -186,10 +199,10 @@ void D11State::setRect() {
 
 	// Create vertex buffer
 	SimpleVertex vertices[] = {
-		{ D3DXVECTOR3(left, top, 0.5f), D3DXVECTOR2(texl, text) },
-		{ D3DXVECTOR3(right, top, 0.5f), D3DXVECTOR2(texr, text) },
-		{ D3DXVECTOR3(right, bottom, 0.5f), D3DXVECTOR2(texr, texb) },
-		{ D3DXVECTOR3(left, bottom, 0.5f), D3DXVECTOR2(texl, texb) },
+		{ SimpleVec3(left, top, 0.5f), SimpleVec2(texl, text) },
+		{ SimpleVec3(right, top, 0.5f), SimpleVec2(texr, text) },
+		{ SimpleVec3(right, bottom, 0.5f), SimpleVec2(texr, texb) },
+		{ SimpleVec3(left, bottom, 0.5f), SimpleVec2(texl, texb) },
 	};
 
 	// map/unmap to temporarily deny GPU access to the resource pVertexBuffer
@@ -322,22 +335,15 @@ bool D11State::init() {
 
 	pDeviceContext->OMSetBlendState(pBlendState, NULL, 0xffffffff);
 
-	hr = D3DX11CreateEffectFromMemory((LPCVOID) g_main, sizeof(g_main), 0, pDevice, &pEffect);
+	hr = pDevice->CreateVertexShader(g_vertex_shader, sizeof(g_vertex_shader), NULL, &pVertexShader);
 	if (FAILED(hr)) {
-		ods("D3D11: D3DX11CreateEffectFromMemory failed!");
+		ods("D3D11: Failed to create vertex shader.");
 		return false;
 	}
 
-	pTechnique = pEffect->GetTechniqueByName("Render");
-	if (pTechnique == NULL) {
-		ods("D3D11: Could not get technique for name 'Render'");
-		return false;
-	}
-
-
-	pDiffuseTexture = pEffect->GetVariableByName("txDiffuse")->AsShaderResource();
-	if (pDiffuseTexture == NULL) {
-		ods("D3D11: Could not get variable by name 'txDiffuse'");
+	hr = pDevice->CreatePixelShader(g_pixel_shader, sizeof(g_pixel_shader), NULL, &pPixelShader);
+	if (FAILED(hr)) {
+		ods("D3D11: Failed to create pixel shader.");
 		return false;
 	}
 
@@ -350,15 +356,7 @@ bool D11State::init() {
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-	// Create the input layout
-	D3DX11_PASS_DESC PassDesc;
-	hr = pTechnique->GetPassByIndex(0)->GetDesc(&PassDesc);
-	if (FAILED(hr)) {
-		ods("D3D11: Couldn't get pass description for technique");
-		return false;
-	}
-
-	hr = pDevice->CreateInputLayout(layout, ARRAY_NUM_ELEMENTS(layout), PassDesc.pIAInputSignature, PassDesc.IAInputSignatureSize, &pVertexLayout);
+	hr = pDevice->CreateInputLayout(layout, ARRAY_NUM_ELEMENTS(layout), g_vertex_shader, sizeof(g_vertex_shader), &pVertexLayout);
 	if (FAILED(hr)) {
 		ods("D3D11: pDevice->CreateInputLayout failure!");
 		return false;
@@ -425,8 +423,10 @@ D11State::~D11State() {
 		pIndexBuffer->Release();
 	if (pVertexLayout)
 		pVertexLayout->Release();
-	if (pEffect)
-		pEffect->Release();
+	if (pVertexShader)
+		pVertexShader->Release();
+	if (pPixelShader)
+		pPixelShader->Release();
 	if (pRTV)
 		pRTV->Release();
 
@@ -469,22 +469,16 @@ void D11State::draw() {
 			pMyStateBlock->Apply();
 		}
 
-		D3DX11_TECHNIQUE_DESC techDesc;
-		pTechnique->GetDesc(&techDesc);
-
 		// Set vertex buffer
 		UINT stride = sizeof(SimpleVertex);
 		UINT offset = 0;
 		pDeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &stride, &offset);
 
-		HRESULT hr = pDiffuseTexture->SetResource(pSRView);
-		if (FAILED(hr))
-			ods("D3D11: Failed to set resource");
-
-		for (UINT p = 0; p < techDesc.Passes; ++p) {
-			pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext);
-			pDeviceContext->DrawIndexed(6, 0, 0);
-		}
+		pDeviceContext->VSSetShader(pVertexShader, NULL, 0);
+		pDeviceContext->GSSetShader(NULL, NULL, 0);
+		pDeviceContext->PSSetShaderResources(0, 1, &pSRView);
+		pDeviceContext->PSSetShader(pPixelShader, NULL, 0);
+		pDeviceContext->DrawIndexed(6, 0, 0);
 
 		if (bDeferredContext) {
 			ID3D11CommandList *pCommandList;

@@ -93,7 +93,7 @@
 #define PACKAGE_NAME "opus"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "opus 1.1-beta"
+#define PACKAGE_STRING "opus 1.1.3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "opus"
@@ -102,7 +102,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.1-beta"
+#define PACKAGE_VERSION "1.1.3"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -134,4 +134,30 @@
 #if defined __SUNPRO_CC && !defined __RESTRICT
 # define _Restrict
 # define __restrict__
+#endif
+
+// For now, only enable for OS X. We're sure
+// that modern OS X is x86-64, but we can't make
+// the same assumption for other Unix-like OSes.
+#if defined(__APPLE__) && defined(__x86_64__)
+/* Use run-time CPU capabilities detection */
+/* #undef OPUS_HAVE_RTCD */
+
+/* Compiler supports X86 SSE Intrinsics */
+#define OPUS_X86_MAY_HAVE_SSE 1
+
+/* Compiler supports X86 SSE2 Intrinsics */
+#define OPUS_X86_MAY_HAVE_SSE2 1
+
+/* Compiler supports X86 SSE4.1 Intrinsics */
+/* #undef OPUS_X86_MAY_HAVE_SSE4_1 */
+
+/* Define if binary requires SSE intrinsics support */
+#define OPUS_X86_PRESUME_SSE 1
+
+/* Define if binary requires SSE2 intrinsics support */
+#define OPUS_X86_PRESUME_SSE2 1
+
+/* Define if binary requires SSE4.1 intrinsics support */
+/* #undef OPUS_X86_PRESUME_SSE4_1 */
 #endif

@@ -1,32 +1,8 @@
-/* Copyright (C) 2015 Stefan Hacker <dd0t@users.sourceforge.net>
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
 #include "mumble_pch.hpp"
 
 #include "ThemeInfo.h"
@@ -44,7 +20,7 @@ QFileInfo ThemeInfo::StyleInfo::getPlatformQss() const {
 }
 
 boost::optional<ThemeInfo::StyleInfo> readStyleFromConfig(QSettings &themeConfig, const QString &styleId, const ThemeInfo &theme, const QDir &themeDir) {
-	QRegExp qssPlatformRegex(QLatin1String("^qss_(.*)"));
+	QRegExp qssPlatformRegex(QString::fromLatin1("^%1/qss_(.*)").arg(styleId));
 	
 	ThemeInfo::StyleInfo style;
 	
@@ -66,7 +42,7 @@ boost::optional<ThemeInfo::StyleInfo> readStyleFromConfig(QSettings &themeConfig
 		qssPlatformRegex.indexIn(platformQssConfig);
 		const QString platform = qssPlatformRegex.cap(1);
 		
-		QFileInfo platformQss = (themeDir.filePath(themeConfig.value(QString::fromLatin1("%1/%2").arg(styleId, platformQssConfig)).toString()));
+		QFileInfo platformQss = (themeDir.filePath(themeConfig.value(platformQssConfig).toString()));
 		if (!platformQss.exists() || !platformQss.isFile()) {
 			qWarning() << "Style" << style.name << " of theme " << theme.name << " references invalid qss " << platformQss.filePath() << " for platform " << platform << ", skipping theme";
 			return boost::none;
@@ -148,10 +124,10 @@ boost::optional<ThemeInfo> ThemeInfo::load(const QDir &themeDirectory) {
 	return theme;
 }
 
-ThemeInfo::StyleInfo ThemeInfo::getStyle(QString name) const {
+ThemeInfo::StyleInfo ThemeInfo::getStyle(QString name_) const {
 	Q_ASSERT(styles.contains(defaultStyle));
 	
-	return styles.value(name, styles.value(defaultStyle));
+	return styles.value(name_, styles.value(defaultStyle));
 }
 
 

@@ -1,33 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2009-2011, Stefan Hacker <dd0t@users.sourceforge.net>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -64,7 +38,7 @@
 #define VICTIM_INIT \
 	ClientUser *pDst=ClientUser::get(msg.session()); \
 	 if (! pDst) { \
- 		qWarning("MainWindow: Message for nonexistant victim %d.", msg.session()); \
+ 		qWarning("MainWindow: Message for nonexistent victim %d.", msg.session()); \
 		return; \
 	}
 
@@ -190,6 +164,8 @@ void MainWindow::msgServerConfig(const MumbleProto::ServerConfig &msg) {
 		g.uiMessageLength = msg.message_length();
 	if (msg.has_image_message_length())
 		g.uiImageLength = msg.image_message_length();
+	if (msg.has_max_users())
+		g.uiMaxUsers = msg.max_users();
 }
 
 void MainWindow::msgPermissionDenied(const MumbleProto::PermissionDenied &msg) {
@@ -305,6 +281,7 @@ void MainWindow::msgUserState(const MumbleProto::UserState &msg) {
 			pDst->setLocalMute(true);
 		if (Database::isLocalIgnored(pDst->qsHash))
 			pDst->setLocalIgnore(true);
+		pDst->fLocalVolume = Database::getUserLocalVolume(pDst->qsHash);
 	}
 
 	if (bNewUser)
@@ -316,7 +293,7 @@ void MainWindow::msgUserState(const MumbleProto::UserState &msg) {
 		if (msg.has_self_deaf())
 			pDst->setSelfDeaf(msg.self_deaf());
 
-		if (pSelf && pDst != pSelf && (pDst->cChannel == pSelf->cChannel)) {
+		if (pSelf && pDst != pSelf && ((pDst->cChannel == pSelf->cChannel) || pDst->cChannel->allLinks().contains(pSelf->cChannel))) {
 			QString name = pDst->qsName;
 			if (pDst->bSelfMute && pDst->bSelfDeaf)
 				g.l->log(Log::OtherSelfMute, tr("%1 is now muted and deafened.").arg(Log::formatClientUser(pDst, Log::Target)));
@@ -349,7 +326,7 @@ void MainWindow::msgUserState(const MumbleProto::UserState &msg) {
 	}
 
 	if (msg.has_priority_speaker()) {
-		if (pSelf && ((pDst->cChannel == pSelf->cChannel) || (pSrc == pSelf))) {
+		if (pSelf && ((pDst->cChannel == pSelf->cChannel) || (pDst->cChannel->allLinks().contains(pSelf->cChannel)) || (pSrc == pSelf))) {
 			if ((pSrc == pDst) && (pSrc == pSelf)) {
 				if (pDst->bPrioritySpeaker) {
 					g.l->log(Log::YouMuted, tr("You revoked your priority speaker status."));
@@ -394,7 +371,7 @@ void MainWindow::msgUserState(const MumbleProto::UserState &msg) {
 		if (msg.has_suppress())
 			pDst->setSuppress(msg.suppress());
 
-		if (pSelf && ((pDst->cChannel == pSelf->cChannel) || (pSrc == pSelf))) {
+		if (pSelf && ((pDst->cChannel == pSelf->cChannel) || (pDst->cChannel->allLinks().contains(pSelf->cChannel)) || (pSrc == pSelf))) {
 			if (pDst == pSelf) {
 				if (msg.has_mute() && msg.has_deaf() && pDst->bMute && pDst->bDeaf) {
 					g.l->log(Log::YouMuted, tr("You were muted and deafened by %1.").arg(Log::formatClientUser(pSrc, Log::Source)));
@@ -531,8 +508,13 @@ void MainWindow::msgUserState(const MumbleProto::UserState &msg) {
 		QString newName = u8(msg.name());
 		pmModel->renameUser(pDst, newName);
 		if (! oldName.isNull() && oldName != newName) {
-			g.l->log(Log::UserRenamed, tr("%1 renamed to %2.").arg(Log::formatClientUser(pDst, Log::Target, oldName),
-				Log::formatClientUser(pDst, Log::Target)));
+			if (pSrc != pDst) {
+				g.l->log(Log::UserRenamed, tr("%1 renamed to %2 by %3.").arg(Log::formatClientUser(pDst, Log::Target, oldName))
+					.arg(Log::formatClientUser(pDst, Log::Target)).arg(Log::formatClientUser(pSrc, Log::Source)));
+			} else {
+				g.l->log(Log::UserRenamed, tr("%1 renamed to %2.").arg(Log::formatClientUser(pDst, Log::Target, oldName),
+					Log::formatClientUser(pDst, Log::Target)));
+			}
 		}
 	}
 	if (msg.has_texture_hash()) {
@@ -575,7 +557,7 @@ void MainWindow::msgUserRemove(const MumbleProto::UserRemove &msg) {
 		else
 			g.l->log((pSrc == pSelf) ? Log::YouKicked : Log::UserKicked, tr("%3 was kicked from the server by %1: %2.").arg(Log::formatClientUser(pSrc, Log::Source)).arg(reason).arg(Log::formatClientUser(pDst, Log::Target)));
 	} else {
-		if (pDst->cChannel == pSelf->cChannel) {
+		if (pDst->cChannel == pSelf->cChannel || pDst->cChannel->allLinks().contains(pSelf->cChannel)) {
 			g.l->log(Log::ChannelLeave, tr("%1 left channel and disconnected.").arg(Log::formatClientUser(pDst, Log::Source)));
 		} else {
 			g.l->log(Log::UserLeave, tr("%1 disconnected.").arg(Log::formatClientUser(pDst, Log::Source)));
@@ -666,6 +648,10 @@ void MainWindow::msgChannelState(const MumbleProto::ChannelState &msg) {
 		if (! ql.isEmpty())
 			pmModel->linkChannels(c, ql);
 	}
+
+	if (msg.has_max_users()) {
+		c->uiMaxUsers = msg.max_users();
+	}
 }
 
 void MainWindow::msgChannelRemove(const MumbleProto::ChannelRemove &msg) {
@@ -696,6 +682,8 @@ void MainWindow::msgTextMessage(const MumbleProto::TextMessage &msg) {
 		target += tr("(Tree) ");
 	} else if (msg.channel_id_size() > 0) {
 		target += tr("(Channel) ");
+	} else if (msg.session_size() > 0) {
+		target += tr("(Private) ");
 	}
 
 	g.l->log(Log::TextMessage, tr("%2%1: %3").arg(name).arg(target).arg(u8(msg.message())),

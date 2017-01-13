@@ -54,10 +54,6 @@
       <Directory Id="$(var.ArchSpecificProgramFilesFolderId)">
         <Directory Id="INSTALLDIR" Name="$(var.ProductName)">
         </Directory>
-
-        <?ifdef MergeModuleDir ?>
-          <Merge Id="VCRedist" SourceFile="$(var.MergeModuleDir)\Microsoft_VC120_CRT_x86.msm" DiskId="1" Language="1033" />
-        <?endif ?>
       </Directory>
 
       <Directory Id="DesktopFolder" />
@@ -105,43 +101,13 @@
     </DirectoryRef>
 
     <ComponentGroup Id="LibrariesCommon">
-      <?ifndef StaticBuild ?>
-        <ComponentGroupRef Id="Qt" />
-
-        <ComponentRef Id="libeay32.dll" />
-        <ComponentRef Id="ssleay32.dll" />
-        <?ifdef ZlibDir ?>
-          <ComponentRef Id="zlib1.dll" />
-        <?endif ?>
-
-        <ComponentRef Id="qt.conf" />
-      <?endif ?>
-
       <ComponentRef Id="licence.txt" />
       <ComponentRef Id="Readme.txt" />
       <ComponentRef Id="Changes.txt" />
       <ComponentRef Id="qt.txt" />
-
-      <?ifndef StaticBuild ?>
-        <?ifdef ProtoBufDir ?>
-          <ComponentRef Id="libprotobuf.dll" />
-        <?endif ?>
-        <?ifdef MySQLDir ?>
-          <ComponentRef Id="libmysql.dll" />
-        <?endif ?>
-      <?endif ?>
-
-      <?ifdef IntelCppDir ?>
-        <ComponentRef Id="libmmd.dll"/>
-      <?endif ?>
     </ComponentGroup>
 
     <Feature Id="Mumble" Title="!(loc.MUMBLE_SEC_MUMBLE)" Description="!(loc.DESC_SectionMumble)" Level="1" AllowAdvertise="no" ConfigurableDirectory="INSTALLDIR" Display="expand">
-      <?ifndef StaticBuild ?>
-        <?ifdef SndFileDir ?>
-          <ComponentRef Id="libsndfile1.dll" />
-        <?endif ?>
-      <?endif ?>
       <ComponentRef Id="speex.dll" />
       <ComponentRef Id="speex.txt" />
 
@@ -158,9 +124,7 @@
         <ComponentRef Id="celt0.0.11.0.sse2.dll" />
         <ComponentRef Id="opus.sse2.dll" />
       <?endif ?>
-      <?ifdef StaticBuild ?>
-        <ComponentRef Id="mumble_app.dll" />
-      <?endif ?>
+      <ComponentRef Id="mumble_app.dll" />
       <ComponentRef Id="mumble.exe" />
       <ComponentRef Id="mumble_ol.dll" />
       <ComponentRef Id="mumble_ol_helper.exe" />
@@ -177,29 +141,12 @@
 
       <ComponentRef Id="dbghelp.dll" />
 
-      <?ifdef D3DCompilerDLL ?>
-        <ComponentRef Id="d3dcompiler_43.dll" />
-        <ComponentRef Id="d3dcompiler_47.dll" />
-      <?endif ?>
-
       <Feature Id="MumbleDesktopShortcutFeature" Title="!(loc.MUMBLE_SEC_DesktopShortcut)" Description="!(loc.DESC_DesktopShortcut)" InstallDefault="followParent" AllowAdvertise="no">
         <ComponentRef Id="MumbleDesktopShortcutComponent" />
       </Feature>
     </Feature>
 
     <Feature Id="Murmur" Title="!(loc.MUMBLE_SEC_MURMUR)" Description="!(loc.DESC_SectionMurmur)" Level="1000" ConfigurableDirectory="INSTALLDIR" Display="expand">
-      <?ifdef Murmur ?>
-      <?ifndef StaticBuild ?>
-        <?ifdef IceDir ?>
-          <ComponentRef Id="bzip2.dll" />
-          <ComponentRef Id="ice34.dll" />
-          <ComponentRef Id="iceutil34.dll" />
-        <?endif ?>
-        <?ifdef DBusDir ?>
-          <ComponentGroupRef Id="DBus" />
-        <?endif ?>
-      <?endif ?>
-
       <ComponentRef Id="murmur.exe" />
       <ComponentRef Id="murmur.ini" />
       <ComponentRef Id="Murmur.ice" />
@@ -224,12 +171,6 @@
       <ComponentRef Id="UninstallerComponent" />
       <ComponentRef Id="NSISUninstall" />
     </Feature>
-
-    <?ifdef MergeModuleDir ?>
-    <Feature Id="VCRedist" Title="Visual C++ 10.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
-      <MergeRef Id="VCRedist"/>
-    </Feature>
-    <?endif ?>
 
     <InstallExecuteSequence>
       <AppSearch Sequence='1' />

@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -130,7 +105,7 @@ void ShortcutKeyWidget::displayKeys(bool last) {
 	emit keySet(keys.count() > 0, last);
 }
 
-ShortcutActionWidget::ShortcutActionWidget(QWidget *p) : QComboBox(p) {
+ShortcutActionWidget::ShortcutActionWidget(QWidget *p) : MUComboBox(p) {
 	int idx = 0;
 
 	insertItem(idx, tr("Unassigned"));
@@ -173,7 +148,7 @@ unsigned int ShortcutActionWidget::index() const {
 	return itemData(currentIndex()).toUInt();
 }
 
-ShortcutToggleWidget::ShortcutToggleWidget(QWidget *p) : QComboBox(p) {
+ShortcutToggleWidget::ShortcutToggleWidget(QWidget *p) : MUComboBox(p) {
 	int idx = 0;
 
 	insertItem(idx, tr("Off"));
@@ -280,12 +255,12 @@ ShortcutTargetDialog::ShortcutTargetDialog(const ShortcutTarget &st, QWidget *pw
 	root->setExpanded(true);
 	qmTree.insert(-1, root);
 
-	QTreeWidgetItem *pitem = new QTreeWidgetItem(root, QStringList(tr("Parent")));
-	pitem->setData(0, Qt::UserRole, SHORTCUT_TARGET_PARENT);
-	pitem->setExpanded(true);
-	qmTree.insert(-2, pitem);
+	QTreeWidgetItem *parent_item = new QTreeWidgetItem(root, QStringList(tr("Parent")));
+	parent_item->setData(0, Qt::UserRole, SHORTCUT_TARGET_PARENT);
+	parent_item->setExpanded(true);
+	qmTree.insert(-2, parent_item);
 
-	QTreeWidgetItem *current = new QTreeWidgetItem(pitem, QStringList(tr("Current")));
+	QTreeWidgetItem *current = new QTreeWidgetItem(parent_item, QStringList(tr("Current")));
 	current->setData(0, Qt::UserRole, SHORTCUT_TARGET_CURRENT);
 	qmTree.insert(-3, current);
 
@@ -296,7 +271,7 @@ ShortcutTargetDialog::ShortcutTargetDialog(const ShortcutTarget &st, QWidget *pw
 	}
 
 	for (int i = 0; i < 8; ++i) {
-		QTreeWidgetItem *psub = new QTreeWidgetItem(pitem, QStringList(UPARROW + tr("Subchannel #%1").arg(i+1)));
+		QTreeWidgetItem *psub = new QTreeWidgetItem(parent_item, QStringList(UPARROW + tr("Subchannel #%1").arg(i+1)));
 		psub->setData(0, Qt::UserRole, SHORTCUT_TARGET_PARENT_SUBCHANNEL - i);
 		qmTree.insert(SHORTCUT_TARGET_PARENT_SUBCHANNEL - i, psub);
 	}
@@ -557,25 +532,51 @@ GlobalShortcutConfig::GlobalShortcutConfig(Settings &st) : ConfigWidget(st) {
 
 
 	qcbEnableGlobalShortcuts->setVisible(canDisable);
+
+#ifdef Q_OS_MAC
+	// Help Mac users enable accessibility access for Mumble...
+	if (QSysInfo::MacintoshVersion >= QSysInfo::MV_MAVERICKS) {
+		qpbOpenAccessibilityPrefs->setHidden(true);
+		label->setText(tr(
+			"<html><head/><body>"
+			"<p>"
+			"Mumble can currently only use mouse buttons and keyboard modifier keys (Alt, Ctrl, Cmd, etc.) for global shortcuts."
+			"</p>"
+			"<p>"
+			"If you want more flexibility, you can add Mumble as a trusted accessibility program in the Security & Privacy section "
+			"of your Mac's System Preferences."
+			"</p>"
+			"<p>"
+			"In the Security & Privacy preference pane, change to the Privacy tab. Then choose Accessibility (near the bottom) in "
+			"the list to the left. Finally, add Mumble to the list of trusted accessibility programs."
+			"</body></html>"
+		));
+	}
+#endif
 }
 
-bool GlobalShortcutConfig::eventFilter(QObject* /*object*/, QEvent *event) {
+bool GlobalShortcutConfig::eventFilter(QObject* /*object*/, QEvent *e) {
 #ifdef Q_OS_MAC
-	if (event->type() == QEvent::WindowActivate) {
+	if (e->type() == QEvent::WindowActivate) {
 		if (! g.s.bSuppressMacEventTapWarning) {
 			qwWarningContainer->setVisible(showWarning());
 		}
 	}
 #else
-	Q_UNUSED(event)
+	Q_UNUSED(e)
 #endif
 	return false;
 }
 
 bool GlobalShortcutConfig::showWarning() const {
 #ifdef Q_OS_MAC
-	if (! QFile::exists(QLatin1String("/private/var/db/.AccessibilityAPIEnabled"))) {
-		return true;
+# if MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
+	if (QSysInfo::MacintoshVersion >= QSysInfo::MV_MAVERICKS) {
+		return !AXIsProcessTrustedWithOptions(NULL);
+	} else
+# endif
+	{
+		return !QFile::exists(QLatin1String("/private/var/db/.AccessibilityAPIEnabled"));
 	}
 #endif
 	return false;
@@ -848,8 +849,9 @@ bool GlobalShortcutEngine::handleButton(const QVariant &button, bool down) {
 
 	if (down) {
 		AudioInputPtr ai = g.ai;
-		if (ai.get())
+		if (ai) {
 			ai->tIdle.restart();
+		}
 	}
 
 	int idx = qlButtonList.indexOf(button);

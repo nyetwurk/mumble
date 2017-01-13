@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 /* Copyright (C) 2011, Mark-Willem Jansen <rawnar@users.sourceforge.net>
    Copyright (C) 2005-2012, Thorvald Natvig <thorvald@natvig.com>
 
@@ -29,11 +34,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "../mumble_plugin_win32.h"
+#include "../mumble_plugin_win32_32bit.h"
 
-BYTE *posptr;
-BYTE *frontptr;
-BYTE *topptr;
+procptr32_t posptr, frontptr, topptr;
 
 static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, float *camera_pos, float *camera_front, float *camera_top, std::string &, std::wstring &) {
 	bool ok;
@@ -43,7 +46,7 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 
 	// State value is working most of the time
 	unsigned char state;
-	ok = peekProc((BYTE *) 0x11146bb, &state, sizeof(state));
+	ok = peekProc(0x11146bb, &state, sizeof(state));
 	if (! ok)
 		return false;
 	// State is 255 when you are in a menu
@@ -79,13 +82,13 @@ static int trylock(const std::multimap<std::wstring, unsigned long long int> &pi
 
 	// Checking the version of Breach
 	char version[12];
-	if ((! peekProc((BYTE *) 0x1118f98, &version, sizeof(version))) || (strncmp("breach 1.1.0", version, sizeof(version)) != 0)) {
+	if ((! peekProc(0x1118f98, &version, sizeof(version))) || (strncmp("breach 1.1.0", version, sizeof(version)) != 0)) {
 		generic_unlock();
 		return false;
 	}
 
 	// Setting the pointers for the avatar information
-	BYTE *ptr1 = peekProc<BYTE *>(pModule + 0x177980);
+	procptr32_t ptr1 = peekProc<procptr32_t>(pModule + 0x177980);
 	if (ptr1 == 0) {
 		generic_unlock();
 		return false;
@@ -135,10 +138,10 @@ static MumblePlugin2 breachplug2 = {
 	trylock
 };
 
-extern "C" __declspec(dllexport) MumblePlugin *getMumblePlugin() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin *getMumblePlugin() {
 	return &breachplug;
 }
 
-extern "C" __declspec(dllexport) MumblePlugin2 *getMumblePlugin2() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin2 *getMumblePlugin2() {
 	return &breachplug2;
 }

@@ -1,3 +1,8 @@
+# Copyright 2005-2017 The Mumble Developers. All rights reserved.
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file at the root of the
+# Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 include(../compiler.pri)
 
 TEMPLATE	= lib
@@ -9,6 +14,10 @@ CONFIG(static) {
 	CONFIG -= static
 	CONFIG += shared
 	CONFIG += qt_dynamic_lookup
+}
+
+!CONFIG(no-plugin-legacy-ptr) {
+	DEFINES += USE_PLUGIN_LEGACY_PTR
 }
 
 CONFIG(debug, debug|release) {

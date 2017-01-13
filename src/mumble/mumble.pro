@@ -1,4 +1,10 @@
+# Copyright 2005-2017 The Mumble Developers. All rights reserved.
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file at the root of the
+# Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 include(../mumble.pri)
+include(../../python.pri)
 
 DEFINES		*= MUMBLE
 TEMPLATE	= app
@@ -39,7 +45,7 @@ CONFIG(static) {
 
     CONFIG -= static
     CONFIG += shared qt_static mumble_dll
-    DEFINES += USE_MUMBLE_DLL QT_SHARED
+    DEFINES += USE_MUMBLE_DLL
     isEqual(QT_MAJOR_VERSION, 5) {
       # Qt 5 uses an auto-generated .cpp file for importing plugins.
       # However, it is only automatically enabled for TEMPLATE = app.
@@ -47,32 +53,7 @@ CONFIG(static) {
       # This means we'll have to explicitly ask Qt to generate and build the
       # plugin importer.
       CONFIG += force_import_plugins
-
-      # Pretend we're inside a Qt build to get the Qt headers to dllexport correctly.
-      # This is achievable in Qt 4 by defining QT_SHARED, but in Qt 5 we have to
-      # hack our way around it. Even QT_SHARED will give us dllimport unless Qt thinks
-      # it's doing a Qt build.
-      DEFINES += QT_BUILD_CORE_LIB QT_BUILD_GUI_LIB QT_BUILD_WIDGETS_LIB QT_BUILD_NETWORK_LIB QT_BUILD_XML_LIB QT_BUILD_SQL_LIB QT_BUILD_SVG_LIB
     }
-
-    DEF_FILE = $${DESTDIR}/$${TARGET}.def
-
-    QMAKE_LFLAGS += /DEF:$${DEF_FILE}
-    QMAKE_LFLAGS += /ignore:4102 # export of deleting destructor
-    QMAKE_LFLAGS += /ignore:4197 # specified multiple times
-
-    CONFIG(debug, debug|release) {
-      DEF_KIND = debug
-    }
-
-    CONFIG(release, debug|release) {
-      DEF_KIND = release
-    }
-
-    gendef.commands = python ../../scripts/gen-mumble_app-qt-def.py $${DEF_KIND} $$[QT_INSTALL_LIBS] $${DEF_FILE}
-    QMAKE_EXTRA_TARGETS *= gendef
-    PRE_TARGETDEPS *= gendef
-    QMAKE_DISTCLEAN *= $${DEF_FILE}
   }
 
   DEFINES *= USE_STATIC
@@ -82,9 +63,6 @@ CONFIG(static) {
 QT		*= network sql xml svg
 isEqual(QT_MAJOR_VERSION, 5) {
   QT *= widgets
-  # Allow native widget access.
-  win32:QT *= gui-private
-  macx:QT *= gui-private
 }
 
 HEADERS *= BanEditor.h \
@@ -129,6 +107,7 @@ HEADERS *= BanEditor.h \
     ClientUser.h \
     UserEdit.h \
     UserListModel.h \
+    UserLocalVolumeDialog.h \
     Tokens.h \
     UserView.h \
     RichTextEditor.h \
@@ -147,7 +126,10 @@ HEADERS *= BanEditor.h \
     MumbleApplication.h \
     ApplicationPalette.h \
     ThemeInfo.h \
-    Themes.h
+    Themes.h \
+    OverlayPositionableItem.h \
+    widgets/MUComboBox.h \
+    DeveloperConsole.h
 
 SOURCES *= BanEditor.cpp \
     ACLEditor.cpp \
@@ -198,6 +180,7 @@ SOURCES *= BanEditor.cpp \
     ClientUser.cpp \
     UserEdit.cpp \
     UserListModel.cpp \
+    UserLocalVolumeDialog.cpp \
     Tokens.cpp \
     UserView.cpp \
     RichTextEditor.cpp \
@@ -207,12 +190,18 @@ SOURCES *= BanEditor.cpp \
     VoiceRecorderDialog.cpp \
     WebFetch.cpp \
     MumbleApplication.cpp \
-    smallft.cpp \
+    ../../3rdparty/smallft-src/smallft.cpp \
     ThemeInfo.cpp \
-    Themes.cpp
+    Themes.cpp \
+    OverlayPositionableItem.cpp \
+    widgets/MUComboBox.cpp \
+    DeveloperConsole.cpp
 
-DIST		*= ../../icons/mumble.ico licenses.h smallft.h ../../icons/mumble.xpm murmur_pch.h mumble.plist
-RESOURCES	*= mumble.qrc mumble_translations.qrc mumble_flags.qrc ../../themes/MumbleTheme.qrc
+DIST		*= ../../icons/mumble.ico ../../icons/mumble.xpm murmur_pch.h mumble.plist
+RESOURCES	*= mumble.qrc mumble_translations.qrc ../../themes/MumbleTheme.qrc
+# Add the various mumble_flags_XX.qrc files to RESOURCES...
+include(flags/mumble_flags.pri)
+
 FORMS *= ConfigDialog.ui \
     MainWindow.ui \
     ConnectDialog.ui \
@@ -235,6 +224,7 @@ FORMS *= ConfigDialog.ui \
     GlobalShortcutTarget.ui \
     Cert.ui \
     UserEdit.ui \
+    UserLocalVolumeDialog.ui \
     AudioWizard.ui \
     Tokens.ui \
     RichTextEditor.ui \
@@ -246,7 +236,9 @@ FORMS *= ConfigDialog.ui \
 include(translations.pri)
 
 PRECOMPILED_HEADER = mumble_pch.hpp
-INCLUDEPATH *= ../bonjour
+INCLUDEPATH *= ../../3rdparty/qqbonjour-src
+INCLUDEPATH *= ../../3rdparty/smallft-src
+INCLUDEPATH *= widgets
 
 CONFIG(static) {
   # Ensure that static Mumble.app on Mac OS X
@@ -272,6 +264,13 @@ isEmpty(QMAKE_LRELEASE) {
   }
 }
 
+!CONFIG(no-manual-plugin) {
+  SOURCES *= ManualPlugin.cpp
+  HEADERS *= ManualPlugin.h
+  FORMS *= ManualPlugin.ui
+  DEFINES *= USE_MANUAL_PLUGIN
+}
+
 unix:!CONFIG(bundled-speex):system(pkg-config --atleast-version=1.2 speexdsp):system(pkg-config --atleast-version=1.2 speex) {
   CONFIG	*= no-bundled-speex
 }
@@ -290,7 +289,8 @@ CONFIG(no-xinput2) {
 }
 
 CONFIG(no-bundled-speex) {
-  PKGCONFIG	*= speex speexdsp
+  must_pkgconfig(speex)
+  must_pkgconfig(speexdsp)
 }
 
 !CONFIG(no-bundled-speex) {
@@ -310,21 +310,24 @@ CONFIG(sbcelt) {
   }
   CONFIG(no-bundled-celt) {
     INCLUDEPATH	*= /usr/include/celt
+    unix {
+      QMAKE_CFLAGS *= "-I/usr/include/celt" "-isystem /usr/include/celt"
+      QMAKE_CXXFLAGS *= "-I/usr/include/celt" "-isystem /usr/include/celt"
+    }
   }
   !CONFIG(no-bundled-celt) {
-    INCLUDEPATH	*= ../../3rdparty/celt-0.7.0-src/libcelt
+    INCLUDEPATH *= ../../3rdparty/celt-0.7.0-src/libcelt
+    unix {
+      QMAKE_CFLAGS *= "-I../../3rdparty/celt-0.7.0-src/libcelt" "-isystem ../../3rdparty/celt-0.7.0-src/libcelt"
+      QMAKE_CXXFLAGS *= "-I../../3rdparty/celt-0.7.0-src/libcelt" "-isystem ../../3rdparty/celt-0.7.0-src/libcelt"
+    }
   }
-}
-
-!win32 {
-  QMAKE_CXXFLAGS	*= -Wall -Wextra
 }
 
 !win32:!macx:!CONFIG(no-dbus) {
   CONFIG		*= dbus
 }
-
-!CONFIG(no-g15) {
+!contains(UNAME, FreeBSD):!CONFIG(no-g15) {
   CONFIG *= g15
 }
 
@@ -337,7 +340,7 @@ CONFIG(no-vorbis-recording) {
 }
 
 unix:!CONFIG(bundled-opus):system(pkg-config --exists opus) {
-  PKGCONFIG *= opus
+  must_pkgconfig(opus)
   DEFINES *= USE_OPUS
 } else {
   !CONFIG(no-opus) {
@@ -348,6 +351,12 @@ unix:!CONFIG(bundled-opus):system(pkg-config --exists opus) {
     INCLUDEPATH *= ../../3rdparty/opus-src/celt ../../3rdparty/opus-src/include ../../3rdparty/opus-src/src ../../3rdparty/opus-build/src
     DEFINES *= USE_OPUS
     LIBS *= -lopus
+    unix {
+      QMAKE_CFLAGS *= "-I../../3rdparty/opus-src/celt" "-isystem  ../../3rdparty/opus-src/celt"
+      QMAKE_CFLAGS *= "-I../../3rdparty/opus-src/include" "-isystem ../../3rdparty/opus-src/include"
+      QMAKE_CXXFLAGS *= "-I../../3rdparty/opus-src/celt" "-isystem  ../../3rdparty/opus-src/celt"
+      QMAKE_CXXFLAGS *= "-I../../3rdparty/opus-src/include" "-isystem ../../3rdparty/opus-src/include"
+    }
   }
 }
 
@@ -357,16 +366,11 @@ win32 {
   } else {
     RC_FILE = mumble.rc
   }
-  HEADERS	*= GlobalShortcut_win.h Overlay_win.h TaskList.h
-  SOURCES	*= GlobalShortcut_win.cpp TextToSpeech_win.cpp Overlay_win.cpp SharedMemory_win.cpp Log_win.cpp os_win.cpp TaskList.cpp ../../overlay/HardHook.cpp ../../overlay/ods.cpp
-  LIBS		*= -ldxguid -ldinput8 -lsapi -lole32 -lws2_32 -ladvapi32 -lwintrust -ldbghelp -llibsndfile-1 -lshell32 -lshlwapi -luser32 -lgdi32 -lpsapi
+  HEADERS	*= GlobalShortcut_win.h Overlay_win.h TaskList.h UserLockFile.h
+  SOURCES	*= GlobalShortcut_win.cpp TextToSpeech_win.cpp Overlay_win.cpp SharedMemory_win.cpp Log_win.cpp os_win.cpp TaskList.cpp ../../overlay/ods.cpp UserLockFile_win.cpp
+  LIBS		*= -ldxguid -ldinput8 -lsapi -lole32 -lws2_32 -ladvapi32 -lwintrust -ldbghelp -lshell32 -lshlwapi -luser32 -lgdi32 -lpsapi
+  LIBS		*= -logg -lvorbis -lvorbisfile -lFLAC -lsndfile
   LIBS		*= -ldelayimp -delayload:shell32.dll
-
-  equals(QMAKE_TARGET.arch, x86_64) {
-    DEFINES += USE_MINHOOK
-    INCLUDEPATH *= ../../3rdparty/minhook-src/include
-    LIBS *= -lminhook
-  }
 
   DEFINES	*= WIN32
   !CONFIG(no-asio) {
@@ -387,6 +391,19 @@ win32 {
     SOURCES *= GKey.cpp
     DEFINES *= USE_GKEY
   }
+
+  !CONFIG(no-xboxinput) {
+    CONFIG *= xboxinput
+  }
+  CONFIG(xboxinput) {
+    HEADERS *= XboxInput.h
+    SOURCES *= XboxInput.cpp
+    DEFINES *= USE_XBOXINPUT
+  }
+
+  # XInputCheck (3rdparty/xinputheck-src)
+  INCLUDEPATH *= ../../3rdparty/xinputcheck-src
+  LIBS *= -lxinputcheck
 
   !CONFIG(mumble_dll) {
     !CONFIG(no-elevation) {
@@ -420,7 +437,7 @@ unix {
 
   CONFIG *= link_pkgconfig
 
-  PKGCONFIG *= openssl sndfile
+  must_pkgconfig(sndfile)
 
   macx {
     TARGET = Mumble
@@ -430,16 +447,9 @@ unix {
 
     LIBS += -framework Security -framework SecurityInterface -framework ApplicationServices
 
-    HEADERS *= GlobalShortcut_macx.h ConfigDialogDelegate.h
+    HEADERS *= GlobalShortcut_macx.h AppNap.h
     SOURCES *= SharedMemory_unix.cpp
-    OBJECTIVE_SOURCES *= TextToSpeech_macx.mm GlobalShortcut_macx.mm os_macx.mm Log_macx.mm
-
-    !CONFIG(no-cocoa) {
-        DEFINES *= USE_COCOA
-        # Native feeling config dialog.
-        OBJECTIVE_SOURCES += ConfigDialog_macx.mm ConfigDialogDelegate.mm
-        HEADERS += ConfigDialog_macx.h
-    }
+    OBJECTIVE_SOURCES *= TextToSpeech_macx.mm GlobalShortcut_macx.mm os_macx.mm Log_macx.mm AppNap.mm
 
     !CONFIG(universal) {
       # Link against libxar so we can inspect Mac OS X installer packages.
@@ -461,9 +471,17 @@ unix {
     HEADERS += CoreAudio.h
   } else {
     HEADERS *= GlobalShortcut_unix.h
-    SOURCES *= GlobalShortcut_unix.cpp TextToSpeech_unix.cpp Overlay_unix.cpp SharedMemory_unix.cpp Log_unix.cpp
-    PKGCONFIG *= x11
-    LIBS *= -lrt -lXi
+    SOURCES *= os_unix.cpp GlobalShortcut_unix.cpp TextToSpeech_unix.cpp Overlay_unix.cpp SharedMemory_unix.cpp Log_unix.cpp
+    must_pkgconfig(x11)
+    linux* {
+      LIBS *= -lrt
+    }
+    LIBS *= -lXi
+
+    # For MumbleSSL::qsslSanityCheck()
+    contains(UNAME, Linux) {
+      LIBS *= -ldl
+    }
 
     !CONFIG(no-oss) {
       CONFIG  *= oss
@@ -483,7 +501,7 @@ unix {
 
 alsa {
 	DEFINES *= USE_ALSA
-	PKGCONFIG *= alsa
+	must_pkgconfig(alsa)
 	HEADERS *= ALSAAudio.h
 	SOURCES *= ALSAAudio.cpp
 }
@@ -497,14 +515,14 @@ oss {
 
 pulseaudio {
 	DEFINES *= USE_PULSEAUDIO
-	PKGCONFIG *= libpulse
+	must_pkgconfig(libpulse)
 	HEADERS *= PulseAudio.h
 	SOURCES *= PulseAudio.cpp
 }
 
 portaudio {
 	DEFINES *= USE_PORTAUDIO
-	PKGCONFIG *= portaudio-2.0
+	must_pkgconfig(portaudio-2.0)
 	HEADERS *= PAAudio.h
 	SOURCES *= PAAudio.cpp
 }
@@ -520,8 +538,15 @@ asio {
 bonjour {
 	DEFINES *= USE_BONJOUR
 
-	HEADERS *= ../bonjour/BonjourRecord.h ../bonjour/BonjourServiceResolver.h ../bonjour/BonjourServiceBrowser.h BonjourClient.h
-	SOURCES *= ../bonjour/BonjourServiceResolver.cpp ../bonjour/BonjourServiceBrowser.cpp BonjourClient.cpp
+	HEADERS *= \
+		../../3rdparty/qqbonjour-src/BonjourRecord.h \
+		../../3rdparty/qqbonjour-src/BonjourServiceResolver.h \
+		../../3rdparty/qqbonjour-src/BonjourServiceBrowser.h \
+		BonjourClient.h
+	SOURCES *= \
+		../../3rdparty/qqbonjour-src/BonjourServiceResolver.cpp \
+		../../3rdparty/qqbonjour-src/BonjourServiceBrowser.cpp \
+		BonjourClient.cpp
 	win32 {
 		INCLUDEPATH *= "$$BONJOUR_PATH/include"
 		QMAKE_LIBDIR *= "$$BONJOUR_PATH/lib/win32"
@@ -529,7 +554,8 @@ bonjour {
 	}
 	unix:!macx {
 		system(pkg-config --exists avahi-compat-libdns_sd avahi-client) {
-			PKGCONFIG *= avahi-compat-libdns_sd avahi-client
+			must_pkgconfig(avahi-compat-libdns_sd)
+			must_pkgconfig(avahi-client)
 		} else {
 			LIBS *= -ldns_sd
 		}
@@ -547,7 +573,7 @@ speechd {
 	DEFINES *= USE_SPEECHD
 	system(pkg-config --atleast-version=0.8 speech-dispatcher) {
 		DEFINES *= USE_SPEECHD_PKGCONFIG
-		PKGCONFIG *= speech-dispatcher
+		must_pkgconfig(speech-dispatcher)
 	} else {
 		LIBS *= -lspeechd
 		INCLUDEPATH	*= /usr/include/speech-dispatcher
@@ -570,13 +596,14 @@ wasapi {
 
 g15 {
 	DEFINES *= USE_G15
-	unix:!macx {
+	win32|macx {
+		SOURCES *= G15LCDEngine_helper.cpp
+		HEADERS *= G15LCDEngine_helper.h ../../g15helper/g15helper.h
+	}
+	unix:!macx:!contains(UNAME, FreeBSD) {
 		SOURCES *= G15LCDEngine_unix.cpp
 		HEADERS *= G15LCDEngine_unix.h
 		LIBS *= -lg15daemon_client
-	} else {
-		SOURCES *= G15LCDEngine_helper.cpp
-		HEADERS *= G15LCDEngine_helper.h ../../g15helper/g15helper.h
 	}
 }
 
@@ -584,32 +611,45 @@ CONFIG(no-update) {
 	DEFINES *= NO_UPDATE_CHECK
 }
 
+!CONFIG(no-embed-qt-translations):!exists($$[QT_INSTALL_TRANSLATIONS]) {
+  error("$$escape_expand(\\n)$$escape_expand(\\n)"\
+        "The QT_INSTALL_TRANSLATIONS directory ($$[QT_INSTALL_TRANSLATIONS])$$escape_expand(\\n)"\
+	"does not exist.$$escape_expand(\\n)"\
+	"$$escape_expand(\\n)"\
+	"The Mumble build process is attempting to embed Qt translations into the Mumble binary,$$escape_expand(\\n)"\
+	"but it cannot, because the files are missing.$$escape_expand(\\n)"\
+	"$$escape_expand(\\n)"\
+	"If you wish to embed Qt translations into the Mumble binary,$$escape_expand(\\n)"\
+	"you will need to install the translation package for your verison of Qt.$$escape_expand(\\n)"\
+	"For example, On Ubuntu with Qt 5, that package is 'qttranslations5-l10n'.$$escape_expand(\\n)"\
+	"$$escape_expand(\\n)"\
+	"You can also tell the Mumble build process to not embed Qt's$$escape_expand(\\n)"\
+	"translations into the Mumble binary by using the 'no-embed-qt-translations'$$escape_expand(\\n)"\
+	"CONFIG option when running qmake, such as:$$escape_expand(\\n)"\
+	"$$escape_expand(\\n)"\
+	"    $ qmake -recursive main.pro CONFIG+=$$escape_expand(\")no-embed-qt-translations$$escape_expand(\")$$escape_expand(\\n)"\
+	"$$escape_expand(\\n)"\
+	"Please refer to the INSTALL file at the root of the source tree for more information$$escape_expand(\\n)"\
+	"about the build process.$$escape_expand(\\n)"\
+        "$$escape_expand(\\n)")
+}
+
 !CONFIG(no-embed-qt-translations) {
-	# Add additional 3rd party Qt translations not shipped with Qt
-	TRANSLATIONS *= qttranslations/qt_it.ts qttranslations/qt_nl.ts qttranslations/qt_tr.ts
-	DEFINES *= USING_BUNDLED_QT_TRANSLATIONS
-
-	# Add translations shipped with Qt
-	QT_TRANSDIR = $$[QT_INSTALL_TRANSLATIONS]/
-	QT_TRANSDIR = $$replace(QT_TRANSDIR,/,$${DIR_SEPARATOR})
-
-	QT_TRANSDIR = $$[QT_INSTALL_TRANSLATIONS]/
-	QT_TRANSDIR = $$replace(QT_TRANSDIR,/,$${DIR_SEPARATOR})
-
-	QT_TRANSLATION_FILES_SRC *= qt_cs.qm qt_da.qm qt_de.qm qt_es.qm qt_fr.qm qt_he.qm qt_hu.qm qt_ja.qm qt_pl.qm qt_pt.qm qt_ru.qm qt_sv.qm qt_zh_CN.qm qt_zh_TW.qm
-	for(lang, QT_TRANSLATION_FILES_SRC):exists($$[QT_INSTALL_TRANSLATIONS]/$${lang}) {
-		QT_TRANSLATION_FILES *= $${lang}
+	QT_TRANSLATIONS_FALLBACK_DIR = qttranslations
+	QT_TRANSLATIONS_FALLBACK_FILES = $$files($$QT_TRANSLATIONS_FALLBACK_DIR/*.ts)
+	for(fn, QT_TRANSLATIONS_FALLBACK_FILES) {
+		!system($$QMAKE_LRELEASE -silent $$fn) {
+			error(Failed to run lrelease for $$fn)
+		}
 	}
-
-	copytrans.output = ${QMAKE_FILE_NAME}
-	copytrans.commands = $$QMAKE_COPY $${QT_TRANSDIR}${QMAKE_FILE_NAME} ${QMAKE_FILE_OUT}
-	copytrans.input = QT_TRANSLATION_FILES
-	copytrans.CONFIG *= no_link
-	copytrans.variable_out = rcc.depends
-
-	QMAKE_EXTRA_COMPILERS *= copytrans
-
-	RESOURCES *= mumble_qt.qrc
+	GENQRC = $$PYTHON ../../scripts/generate-mumble_qt-qrc.py
+	win32 {
+		GENQRC = $$PYTHON ..\\..\\scripts\\generate-mumble_qt-qrc.py
+	}
+	!system($$GENQRC mumble_qt_auto.qrc $$[QT_INSTALL_TRANSLATIONS] $$QT_TRANSLATIONS_FALLBACK_DIR) {
+		error(Failed to run generate-mumble_qt-qrc.py script)
+	}
+	RESOURCES *= mumble_qt_auto.qrc
 }
 
 !CONFIG(no-embed-tango-icons) {
@@ -618,26 +658,35 @@ CONFIG(no-update) {
 
 CONFIG(static_qt_plugins) {
   DEFINES += USE_STATIC_QT_PLUGINS
-  QTPLUGIN += qtaccessiblewidgets qico qsvg qsvgicon
 
-  # The accessiblewidgets plugin is not needed for Qt 5.4 and greater,
-  # where it is integrated into the QtWidgets library.
-  # See QTBUG-43007 for more information.
-  isEqual(QT_MAJOR_VERSION, 5):greaterThan(QT_MINOR_VERSION, 3) {
-    QTPLUGIN -= qtaccessiblewidgets
-  }
+  # Since Qt 5.3, qt.prf will automatically populate QT_PLUGINS for static builds
+  # for TEMPLATE=app.
+  #
+  # On Windows, in CONFIG(static), we don't use TEMPLATE=app, so we still need this
+  # code there. But for macOS, we don't need it anymore.
+  !contains(TEMPLATE, .*app)|lessThan(QT_VERSION_INT, 50300) {
+    QTPLUGIN += qsvg qsvgicon
 
-  macx {
-    isEqual(QT_MAJOR_VERSION, 5) {
-      QTPLUGIN += qicns qcocoa
-    } else {
-      QTPLUGIN += qicnsicon
+    # The accessiblewidgets plugin is only needed for Qt 5 versions below 5.4.
+    # In Qt 5.4, it was integrated into the QtWidgets library.
+    # See QTBUG-43007 and Qt commit 4255ba40ab073a for more information.
+    isEqual(QT_MAJOR_VERSION, 5):lessThan(QT_MINOR_VERSION, 4) {
+      QTPLUGIN *= qtaccessiblewidgets
     }
-  }
 
-  win32 {
-    isEqual(QT_MAJOR_VERSION, 5) {
-      QTPLUGIN += qwindows
+    macx {
+      isEqual(QT_MAJOR_VERSION, 5) {
+        QTPLUGIN += qicns qcocoa
+      } else {
+        QTPLUGIN += qicnsicon
+      }
+    }
+
+    win32 {
+      QTPLUGIN *= qico
+      isEqual(QT_MAJOR_VERSION, 5) {
+        QTPLUGIN += qwindows
+      }
     }
   }
 

@@ -1,4 +1,9 @@
-/* Copyright (C) 2012, Lukas Orsv‰rn <lucas.orsv@gmail.com>
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
+/* Copyright (C) 2012, Lukas Orsv√§rn <lucas.orsv@gmail.com>
    Copyright (C) 2005-2010, Thorvald Natvig <thorvald@natvig.com> 
 
    All rights reserved.
@@ -30,7 +35,7 @@
    
 */ 
 
-#include "../mumble_plugin_win32.h"  
+#include "../mumble_plugin_win32_32bit.h"  
 
 static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, float *camera_pos, float *camera_front, float *camera_top, std::string &/*context*/, std::wstring &/*identity*/) {
 	for (int i=0;i<3;i++)
@@ -46,7 +51,7 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 	/*
 		value is <     >
 	*/
-	ok = peekProc((BYTE *) 0xB378564, &state, 1); // Magical state value
+	ok = peekProc(0xB378564, &state, 1); // Magical state value
 	if (! ok)
 		return false;
 	
@@ -54,9 +59,9 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 		return true; // This results in all vectors beeing zero which tells Mumble to ignore them.
 	
 	// Peekproc and assign game addresses to our containers, so we can retrieve positional data
-	ok = peekProc((BYTE *) 0x1243BE84, &pos_corrector, 12) &&
-	        peekProc((BYTE *) 0x1243BEA8, &front_corrector, 12) &&
-	        peekProc((BYTE *) 0x1243BE9C, &top_corrector, 12);
+	ok = peekProc(0x1243BE84, &pos_corrector, 12) &&
+	        peekProc(0x1243BEA8, &front_corrector, 12) &&
+	        peekProc(0x1243BE9C, &top_corrector, 12);
 	
 	if (! ok)
 		return false;
@@ -135,10 +140,10 @@ static MumblePlugin2 subrosaplug2 = {
 	trylock
 };
 
-extern "C" __declspec(dllexport) MumblePlugin *getMumblePlugin() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin *getMumblePlugin() {
 	return &subrosaplug;
 }
 
-extern "C" __declspec(dllexport) MumblePlugin2 *getMumblePlugin2() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin2 *getMumblePlugin2() {
 	return &subrosaplug2;
 }

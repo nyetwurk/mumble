@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 /* Copyright (C) 2011-2013, Nye Liu <nyet@nyet.org>
    Copyright (C) 2011-2013, Kissaki <kissaki@gmx.de>
 
@@ -35,8 +40,6 @@
 // File contains the D11StateBlock class and a function D11CreateStateBlock.
 
 #include <d3d11.h>
-#include <d3dx10math.h>
-#include <d3dx11.h>
 
 class D11StateBlock;
 

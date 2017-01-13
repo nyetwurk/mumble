@@ -1,41 +1,11 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
 #include "PulseAudio.h"
-
-#include <sys/soundcard.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/ioctl.h>
 
 #include "Global.h"
 #include "MainWindow.h"
@@ -153,6 +123,28 @@ PulseAudioSystem::~PulseAudioSystem() {
 	pa_threaded_mainloop_free(pam);
 }
 
+QString PulseAudioSystem::outputDevice() const {
+	QString odev = g.s.qsPulseAudioOutput;
+	if (odev.isEmpty()) {
+		odev = qsDefaultOutput;
+	}
+	if (!qhOutput.contains(odev)) {
+		odev = qsDefaultOutput;
+	}
+	return odev;
+}
+
+QString PulseAudioSystem::inputDevice() const {
+	QString idev = g.s.qsPulseAudioInput;
+	if (idev.isEmpty()) {
+		idev = qsDefaultInput;
+	}
+	if (!qhInput.contains(idev)) {
+		idev = qsDefaultInput;
+	}
+	return idev;
+}
+
 void PulseAudioSystem::wakeup() {
 	pa_mainloop_api *api = pa_threaded_mainloop_get_api(pam);
 	api->defer_enable(pade, true);
@@ -178,13 +170,13 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 
 	AudioInputPtr ai = g.ai;
 	AudioOutputPtr ao = g.ao;
-	AudioInput *raw_ai = ai.get();
-	AudioOutput *raw_ao = ao.get();
+	AudioInput *raw_ai = ai.data();
+	AudioOutput *raw_ao = ao.data();
 	PulseAudioInput *pai = dynamic_cast<PulseAudioInput *>(raw_ai);
 	PulseAudioOutput *pao = dynamic_cast<PulseAudioOutput *>(raw_ao);
 
 	if (raw_ao) {
-		QString odev = g.s.qsPulseAudioOutput.isEmpty() ? qsDefaultOutput : g.s.qsPulseAudioOutput;
+		QString odev = outputDevice();
 		pa_stream_state ost = pasOutput ? pa_stream_get_state(pasOutput) : PA_STREAM_TERMINATED;
 		bool do_stop = false;
 		bool do_start = false;
@@ -235,7 +227,8 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 			qWarning("PulseAudio: Starting output: %s", qPrintable(odev));
 			pa_buffer_attr buff;
 			const pa_sample_spec *pss = pa_stream_get_sample_spec(pasOutput);
-			const unsigned int iBlockLen = ((pao->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * ((pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short));
+			const size_t sampleSize = (pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short);
+			const unsigned int iBlockLen = ((pao->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * static_cast<unsigned int>(sampleSize);
 			buff.tlength = iBlockLen * (g.s.iOutputDelay+1);
 			buff.minreq = iBlockLen;
 			buff.maxlength = -1;
@@ -252,7 +245,7 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 	}
 
 	if (raw_ai) {
-		QString idev = g.s.qsPulseAudioInput.isEmpty() ? qsDefaultInput : g.s.qsPulseAudioInput;
+		QString idev = inputDevice();
 		pa_stream_state ist = pasInput ? pa_stream_get_state(pasInput) : PA_STREAM_TERMINATED;
 		bool do_stop = false;
 		bool do_start = false;
@@ -296,7 +289,8 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 			qWarning("PulseAudio: Starting input %s",qPrintable(idev));
 			pa_buffer_attr buff;
 			const pa_sample_spec *pss = pa_stream_get_sample_spec(pasInput);
-			const unsigned int iBlockLen = ((pai->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * ((pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short));
+			const size_t sampleSize = (pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short);
+			const unsigned int iBlockLen = ((pai->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * static_cast<unsigned int>(sampleSize);
 			buff.tlength = iBlockLen;
 			buff.minreq = iBlockLen;
 			buff.maxlength = -1;
@@ -310,7 +304,7 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 	}
 
 	if (raw_ai) {
-		QString odev = g.s.qsPulseAudioOutput.isEmpty() ? qsDefaultOutput : g.s.qsPulseAudioOutput;
+		QString odev = outputDevice();
 		QString edev = qhEchoMap.value(odev);
 		pa_stream_state est = pasSpeaker ? pa_stream_get_state(pasSpeaker) : PA_STREAM_TERMINATED;
 		bool do_stop = false;
@@ -359,7 +353,8 @@ void PulseAudioSystem::eventCallback(pa_mainloop_api *api, pa_defer_event *) {
 			qWarning("PulseAudio: Starting echo: %s", qPrintable(edev));
 			pa_buffer_attr buff;
 			const pa_sample_spec *pss = pa_stream_get_sample_spec(pasSpeaker);
-			const unsigned int iBlockLen = ((pai->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * ((pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short));
+			const size_t sampleSize = (pss->format == PA_SAMPLE_FLOAT32NE) ? sizeof(float) : sizeof(short);
+			const unsigned int iBlockLen = ((pai->iFrameSize * pss->rate) / SAMPLE_RATE) * pss->channels * static_cast<unsigned int>(sampleSize);
 			buff.tlength = iBlockLen;
 			buff.minreq = iBlockLen;
 			buff.maxlength = -1;
@@ -479,7 +474,7 @@ void PulseAudioSystem::read_callback(pa_stream *s, size_t bytes, void *userdata)
 	}
 
 	AudioInputPtr ai = g.ai;
-	PulseAudioInput *pai = dynamic_cast<PulseAudioInput *>(ai.get());
+	PulseAudioInput *pai = dynamic_cast<PulseAudioInput *>(ai.data());
 	if (! pai) {
 		if (length > 0) {
 			pa_stream_drop(s);
@@ -502,7 +497,7 @@ void PulseAudioSystem::read_callback(pa_stream *s, size_t bytes, void *userdata)
 			pai->initializeMixer();
 		}
 		if (data != NULL) {
-			pai->addMic(data, length / pai->iMicSampleSize);
+			pai->addMic(data, static_cast<unsigned int>(length) / pai->iMicSampleSize);
 		}
 	} else if (s == pas->pasSpeaker) {
 		if (!pa_sample_spec_equal(pss, &pai->pssEcho)) {
@@ -516,7 +511,7 @@ void PulseAudioSystem::read_callback(pa_stream *s, size_t bytes, void *userdata)
 			pai->initializeMixer();
 		}
 		if (data != NULL) {
-			pai->addEcho(data, length / pai->iEchoSampleSize);
+			pai->addEcho(data, static_cast<unsigned int>(length) / pai->iEchoSampleSize);
 		}
 	}
 
@@ -530,7 +525,7 @@ void PulseAudioSystem::write_callback(pa_stream *s, size_t bytes, void *userdata
 	Q_ASSERT(s == pas->pasOutput);
 
 	AudioOutputPtr ao = g.ao;
-	PulseAudioOutput *pao = dynamic_cast<PulseAudioOutput *>(ao.get());
+	PulseAudioOutput *pao = dynamic_cast<PulseAudioOutput *>(ao.data());
 
 	unsigned char buffer[bytes];
 
@@ -600,7 +595,7 @@ void PulseAudioSystem::write_callback(pa_stream *s, size_t bytes, void *userdata
 	}
 
 	const unsigned int iSampleSize = pao->iSampleSize;
-	const unsigned int samples = bytes / iSampleSize;
+	const unsigned int samples = static_cast<unsigned int>(bytes) / iSampleSize;
 	bool oldAttenuation = pas->bAttenuating;
 
 	// do we have some mixed output?

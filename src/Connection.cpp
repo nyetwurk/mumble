@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "murmur_pch.h"
 
@@ -39,6 +14,7 @@
 
 #include "Connection.h"
 #include "Message.h"
+#include "SSL.h"
 #include "Mumble.pb.h"
 
 
@@ -90,17 +66,17 @@ void Connection::setToS() {
 		qWarning("Connection: Failed to add flow to QOS");
 #elif defined(Q_OS_UNIX)
 	int val = 0xa0;
-	if (setsockopt(qtsSocket->socketDescriptor(), IPPROTO_IP, IP_TOS, &val, sizeof(val))) {
+	if (setsockopt(static_cast<int>(qtsSocket->socketDescriptor()), IPPROTO_IP, IP_TOS, &val, sizeof(val))) {
 		val = 0x60;
-		if (setsockopt(qtsSocket->socketDescriptor(), IPPROTO_IP, IP_TOS, &val, sizeof(val)))
+		if (setsockopt(static_cast<int>(qtsSocket->socketDescriptor()), IPPROTO_IP, IP_TOS, &val, sizeof(val)))
 			qWarning("Connection: Failed to set TOS for TCP Socket");
 	}
 #if defined(SO_PRIORITY)
 	socklen_t optlen = sizeof(val);
-	if (getsockopt(qtsSocket->socketDescriptor(), SOL_SOCKET, SO_PRIORITY, &val, &optlen) == 0) {
+	if (getsockopt(static_cast<int>(qtsSocket->socketDescriptor()), SOL_SOCKET, SO_PRIORITY, &val, &optlen) == 0) {
 		if (val == 0) {
 			val = 6;
-			setsockopt(qtsSocket->socketDescriptor(), SOL_SOCKET, SO_PRIORITY, &val, sizeof(val));
+			setsockopt(static_cast<int>(qtsSocket->socketDescriptor()), SOL_SOCKET, SO_PRIORITY, &val, sizeof(val));
 		}
 	}
 #endif
@@ -108,7 +84,7 @@ void Connection::setToS() {
 #endif
 }
 
-int Connection::activityTime() const {
+qint64 Connection::activityTime() const {
 	return qtLastPacket.elapsed();
 }
 
@@ -181,7 +157,7 @@ void Connection::messageToNetwork(const ::google::protobuf::Message &msg, unsign
 		return;
 	cache.resize(len + 6);
 	unsigned char *uc = reinterpret_cast<unsigned char *>(cache.data());
-	qToBigEndian<quint16>(msgType, & uc[0]);
+	qToBigEndian<quint16>(static_cast<quint16>(msgType), & uc[0]);
 	qToBigEndian<quint32>(len, & uc[2]);
 
 	msg.SerializeToArray(uc + 6, len);
@@ -212,9 +188,9 @@ void Connection::forceFlush() {
 	qtsSocket->flush();
 
 	nodelay = 1;
-	setsockopt(qtsSocket->socketDescriptor(), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char *>(&nodelay), sizeof(nodelay));
+	setsockopt(static_cast<int>(qtsSocket->socketDescriptor()), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char *>(&nodelay), static_cast<socklen_t>(sizeof(nodelay)));
 	nodelay = 0;
-	setsockopt(qtsSocket->socketDescriptor(), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char *>(&nodelay), sizeof(nodelay));
+	setsockopt(static_cast<int>(qtsSocket->socketDescriptor()), IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char *>(&nodelay), static_cast<socklen_t>(sizeof(nodelay)));
 }
 
 void Connection::disconnectSocket(bool force) {
@@ -237,6 +213,14 @@ quint16 Connection::peerPort() const {
 	return qtsSocket->peerPort();
 }
 
+QHostAddress Connection::localAddress() const {
+	return qtsSocket->localAddress();
+}
+
+quint16 Connection::localPort() const {
+	return qtsSocket->localPort();
+}
+
 QList<QSslCertificate> Connection::peerCertificateChain() const {
 	const QSslCertificate cert = qtsSocket->peerCertificate();
 	if (cert.isNull())
@@ -247,6 +231,22 @@ QList<QSslCertificate> Connection::peerCertificateChain() const {
 
 QSslCipher Connection::sessionCipher() const {
 	return qtsSocket->sessionCipher();
+}
+
+QSsl::SslProtocol Connection::sessionProtocol() const {
+#if QT_VERSION >= 0x050400
+	return qtsSocket->sessionProtocol();
+#else
+	return QSsl::UnknownProtocol; // Cannot determine session cipher. We only know it's some TLS variant
+#endif
+}
+
+QString Connection::sessionProtocolString() const {
+#if QT_VERSION >= 0x050400
+	return MumbleSSL::protocolToString(sessionProtocol());
+#else
+	return QLatin1String("TLS"); // Cannot determine session cipher. We only know it's some TLS variant
+#endif
 }
 
 #ifdef Q_OS_WIN

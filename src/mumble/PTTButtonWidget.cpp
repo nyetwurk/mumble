@@ -1,11 +1,16 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 #include "mumble_pch.hpp"
 
 #include "PTTButtonWidget.h"
 
 #include "Global.h"
 
-PTTButtonWidget::PTTButtonWidget(QWidget *parent) :
-		QWidget(parent) {
+PTTButtonWidget::PTTButtonWidget(QWidget *p) :
+		QWidget(p) {
 	setupUi(this);
 
 	setWindowFlags(Qt::Tool | Qt::WindowStaysOnTopHint);
@@ -15,9 +20,9 @@ PTTButtonWidget::PTTButtonWidget(QWidget *parent) :
 	}
 }
 
-void PTTButtonWidget::closeEvent(QCloseEvent *event) {
+void PTTButtonWidget::closeEvent(QCloseEvent *e) {
 	g.s.qbaPTTButtonWindowGeometry = saveGeometry();
-	QWidget::closeEvent(event);
+	QWidget::closeEvent(e);
 }
 
 void PTTButtonWidget::on_qpbPushToTalk_pressed() {

@@ -1,33 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2009-2011, Stefan Hacker <dd0t@users.sourceforge.net>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -150,9 +124,9 @@ OverlaySettings::OverlaySettings() {
 	qcFps = Qt::white;
 	fFps = 0.75f;
 	qfFps = qfUserName;
-	qrfFps = QRectF(10, 50, -1, 0.023438f);
+	qrfFps = QRectF(0.0f, 0.05, -1, 0.023438f);
 	bFps = false;
-	qrfTime = QRectF(10, 10, -1, 0.023438f);
+	qrfTime = QRectF(0.0f, 0.0, -1, 0.023438f);
 	bTime = false;
 
 	bUseWhitelist = false;
@@ -252,6 +226,7 @@ Settings::Settings() {
 	bTTSMessageReadBack = false;
 	iTTSVolume = 75;
 	iTTSThreshold = 250;
+	qsTTSLanguage = QString();
 	iQuality = 40000;
 	fVolume = 1.0f;
 	fOtherVolume = 0.5f;
@@ -274,6 +249,8 @@ Settings::Settings() {
 	fVADmin = 0.80f;
 	fVADmax = 0.98f;
 
+	bUseOpusMusicEncoding = false;
+
 	bTxAudioCue = false;
 	qsTxAudioCueOn = cqsDefaultPushClickOn;
 	qsTxAudioCueOff = cqsDefaultPushClickOff;
@@ -283,8 +260,8 @@ Settings::Settings() {
 	bWhisperFriends = false;
 
 	uiDoublePush = 0;
-	uiPTTHold = 0;
-	bExpert = false;
+	pttHold = 0;
+	bExpert = true;
 
 #ifdef NO_UPDATE_CHECK
 	bUpdateCheck = false;
@@ -302,6 +279,7 @@ Settings::Settings() {
 
 	ceExpand = ChannelsWithUsers;
 	ceChannelDrag = Ask;
+	ceUserDrag = Move;
 	bMinimalView = false;
 	bHideFrame = false;
 	aotbAlwaysOnTop = OnTopNever;
@@ -309,7 +287,7 @@ Settings::Settings() {
 #ifdef Q_OS_WIN
 	// Don't enable minimize to tray by default on Windows >= 7
 	const QSysInfo::WinVersion winVer = QSysInfo::windowsVersion();
-	bHideInTray = (winVer != QSysInfo::WV_WINDOWS7 && winVer != QSysInfo::WV_WINDOWS8 && winVer != QSysInfo::WV_WINDOWS8_1);
+	bHideInTray = (winVer < QSysInfo::WV_WINDOWS7);
 #else
 	const bool isUnityDesktop = QProcessEnvironment::systemEnvironment().value(QLatin1String("XDG_CURRENT_DESKTOP")) == QLatin1String("Unity");
 	bHideInTray = !isUnityDesktop;
@@ -367,6 +345,8 @@ Settings::Settings() {
 	bAutoConnect = false;
 	ptProxyType = NoProxy;
 	usProxyPort = 0;
+	iMaxInFlightTCPPings = 2;
+	bUdpForceTcpAddr = true;
 
 	iMaxImageSize = ciDefaultMaxImageSize;
 	iMaxImageWidth = 1024; // Allow 1024x1024 resolution
@@ -412,7 +392,10 @@ Settings::Settings() {
 	bShortcutEnable = true;
 	bSuppressMacEventTapWarning = false;
 	bEnableEvdev = false;
+	bEnableXInput2 = true;
 	bEnableGKey = true;
+	bEnableXboxInput = true;
+	bDirectInputVerboseLogging = false;
 
 	for (int i=Log::firstMsgType; i<=Log::lastMsgType; ++i) {
 		qmMessages.insert(i, Settings::LogConsole | Settings::LogBalloon | Settings::LogTTS);
@@ -494,6 +477,29 @@ BOOST_TYPEOF_REGISTER_TEMPLATE(QList, 1)
 #define LOADENUM(var, name) var = static_cast<BOOST_TYPEOF(var)>(settings_ptr->value(QLatin1String(name), var).toInt())
 #define LOADFLAG(var, name) var = static_cast<BOOST_TYPEOF(var)>(settings_ptr->value(QLatin1String(name), static_cast<int>(var)).toInt())
 
+// Workaround for mumble-voip/mumble#2638.
+//
+// Qt previously expected to be able to write
+// NUL bytes in strings in plists. This is no
+// longer possible, which causes Qt to write
+// incomplete stings to the preferences plist.
+// These are of the form "@Variant(", and, for
+// Mumble, typically happen for float values.
+//
+// We detect this bad value and avoid loading
+// it. This causes such settings to fall back
+// to their defaults, instead of being set to
+// a zero value.
+#ifdef Q_OS_MAC
+ #undef SAVELOAD
+ #define SAVELOAD(var, name) \
+	do { \
+		if (settings_ptr->value(QLatin1String(name)).toString() != QLatin1String("@Variant(")) { \
+			var = qvariant_cast<BOOST_TYPEOF(var)>(settings_ptr->value(QLatin1String(name), var)); \
+		} \
+	} while (0)
+#endif
+
 void OverlaySettings::load() {
 	load(g.qs);
 }
@@ -549,6 +555,7 @@ void OverlaySettings::load(QSettings* settings_ptr) {
 	SAVELOAD(qrfMutedDeafened, "mutedrect");
 	SAVELOAD(qrfAvatar, "avatarrect");
 	SAVELOAD(qrfFps, "fpsrect");
+	SAVELOAD(qrfTime, "timerect");
 
 	LOADFLAG(qaUserName, "useralign");
 	LOADFLAG(qaChannel, "channelalign");
@@ -572,7 +579,7 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(bDeaf, "audio/deaf");
 	LOADENUM(atTransmit, "audio/transmit");
 	SAVELOAD(uiDoublePush, "audio/doublepush");
-	SAVELOAD(uiPTTHold, "audio/ptthold");
+	SAVELOAD(pttHold, "audio/ptthold");
 	SAVELOAD(bTxAudioCue, "audio/pushclick");
 	SAVELOAD(qsTxAudioCueOn, "audio/pushclickon");
 	SAVELOAD(qsTxAudioCueOff, "audio/pushclickoff");
@@ -611,6 +618,8 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(bWhisperFriends, "audio/whisperfriends");
 	SAVELOAD(bTransmitPosition, "audio/postransmit");
 
+	SAVELOAD(bUseOpusMusicEncoding, "codec/opus/encoder/music");
+
 	SAVELOAD(iJitterBufferSize, "net/jitterbuffer");
 	SAVELOAD(iFramesPerPacket, "net/framesperpacket");
 
@@ -644,6 +653,7 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(iTTSVolume, "tts/volume");
 	SAVELOAD(iTTSThreshold, "tts/threshold");
 	SAVELOAD(bTTSMessageReadBack, "tts/readback");
+	SAVELOAD(qsTTSLanguage, "tts/language");
 
 	// Network settings
 	SAVELOAD(bTCPCompat, "net/tcponly");
@@ -659,7 +669,9 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(iMaxImageSize, "net/maximagesize");
 	SAVELOAD(iMaxImageWidth, "net/maximagewidth");
 	SAVELOAD(iMaxImageHeight, "net/maximageheight");
-	SAVELOAD(qsRegionalHost, "net/region");
+	SAVELOAD(qsServicePrefix, "net/serviceprefix");
+	SAVELOAD(iMaxInFlightTCPPings, "net/maxinflighttcppings");
+	SAVELOAD(bUdpForceTcpAddr, "net/udpforcetcpaddr");
 
 	// Network settings - SSL
 	SAVELOAD(qsSslCiphers, "net/sslciphers");
@@ -670,6 +682,7 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(themeStyleName, "ui/themestyle");
 	LOADENUM(ceExpand, "ui/expand");
 	LOADENUM(ceChannelDrag, "ui/drag");
+	LOADENUM(ceUserDrag, "ui/userdrag");
 	LOADENUM(aotbAlwaysOnTop, "ui/alwaysontop");
 	SAVELOAD(bAskOnQuit, "ui/askonquit");
 	SAVELOAD(bMinimalView, "ui/minimalview");
@@ -736,7 +749,10 @@ void Settings::load(QSettings* settings_ptr) {
 	SAVELOAD(bShortcutEnable, "shortcut/enable");
 	SAVELOAD(bSuppressMacEventTapWarning, "shortcut/mac/suppresswarning");
 	SAVELOAD(bEnableEvdev, "shortcut/linux/evdev/enable");
+	SAVELOAD(bEnableXInput2, "shortcut/x11/xinput2/enable");
 	SAVELOAD(bEnableGKey, "shortcut/gkey");
+	SAVELOAD(bEnableXboxInput, "shortcut/windows/xbox/enable");
+	SAVELOAD(bDirectInputVerboseLogging, "shortcut/windows/directinput/verboselogging");
 
 	int nshorts = settings_ptr->beginReadArray(QLatin1String("shortcuts"));
 	for (int i=0; i<nshorts; i++) {
@@ -856,6 +872,7 @@ void OverlaySettings::save(QSettings* settings_ptr) {
 	SAVELOAD(qrfMutedDeafened, "mutedrect");
 	SAVELOAD(qrfAvatar, "avatarrect");
 	SAVELOAD(qrfFps, "fpsrect");
+	SAVELOAD(qrfTime, "timerect");
 
 	SAVEFLAG(qaUserName, "useralign");
 	SAVEFLAG(qaChannel, "channelalign");
@@ -878,7 +895,7 @@ void Settings::save() {
 	SAVELOAD(bDeaf, "audio/deaf");
 	SAVELOAD(atTransmit, "audio/transmit");
 	SAVELOAD(uiDoublePush, "audio/doublepush");
-	SAVELOAD(uiPTTHold, "audio/ptthold");
+	SAVELOAD(pttHold, "audio/ptthold");
 	SAVELOAD(bTxAudioCue, "audio/pushclick");
 	SAVELOAD(qsTxAudioCueOn, "audio/pushclickon");
 	SAVELOAD(qsTxAudioCueOff, "audio/pushclickoff");
@@ -917,6 +934,8 @@ void Settings::save() {
 	SAVELOAD(bWhisperFriends, "audio/whisperfriends");
 	SAVELOAD(bTransmitPosition, "audio/postransmit");
 
+	SAVELOAD(bUseOpusMusicEncoding, "codec/opus/encoder/music");
+
 	SAVELOAD(iJitterBufferSize, "net/jitterbuffer");
 	SAVELOAD(iFramesPerPacket, "net/framesperpacket");
 
@@ -950,6 +969,7 @@ void Settings::save() {
 	SAVELOAD(iTTSVolume, "tts/volume");
 	SAVELOAD(iTTSThreshold, "tts/threshold");
 	SAVELOAD(bTTSMessageReadBack, "tts/readback");
+	SAVELOAD(qsTTSLanguage, "tts/language");
 
 	// Network settings
 	SAVELOAD(bTCPCompat, "net/tcponly");
@@ -964,7 +984,9 @@ void Settings::save() {
 	SAVELOAD(iMaxImageSize, "net/maximagesize");
 	SAVELOAD(iMaxImageWidth, "net/maximagewidth");
 	SAVELOAD(iMaxImageHeight, "net/maximageheight");
-	SAVELOAD(qsRegionalHost, "net/region");
+	SAVELOAD(qsServicePrefix, "net/serviceprefix");
+	SAVELOAD(iMaxInFlightTCPPings, "net/maxinflighttcppings");
+	SAVELOAD(bUdpForceTcpAddr, "net/udpforcetcpaddr");
 
 	// Network settings - SSL
 	SAVELOAD(qsSslCiphers, "net/sslciphers");
@@ -975,6 +997,7 @@ void Settings::save() {
 	SAVELOAD(themeStyleName, "ui/themestyle");
 	SAVELOAD(ceExpand, "ui/expand");
 	SAVELOAD(ceChannelDrag, "ui/drag");
+	SAVELOAD(ceUserDrag, "ui/userdrag");
 	SAVELOAD(aotbAlwaysOnTop, "ui/alwaysontop");
 	SAVELOAD(bAskOnQuit, "ui/askonquit");
 	SAVELOAD(bMinimalView, "ui/minimalview");
@@ -1038,6 +1061,9 @@ void Settings::save() {
 	SAVELOAD(bShortcutEnable, "shortcut/enable");
 	SAVELOAD(bSuppressMacEventTapWarning, "shortcut/mac/suppresswarning");
 	SAVELOAD(bEnableEvdev, "shortcut/linux/evdev/enable");
+	SAVELOAD(bEnableXInput2, "shortcut/x11/xinput2/enable");
+	SAVELOAD(bEnableXboxInput, "shortcut/windows/xbox/enable");
+	SAVELOAD(bDirectInputVerboseLogging, "shortcut/windows/directinput/verboselogging");
 
 	settings_ptr->beginWriteArray(QLatin1String("shortcuts"));
 	int idx = 0;

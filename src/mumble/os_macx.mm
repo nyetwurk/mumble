@@ -1,41 +1,18 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2008-2011, Mikkel Krautz <mikkel@krautz.dk>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
+#include "LogEmitter.h"
 #include "Global.h"
 #include "Overlay.h"
 #include "MainWindow.h"
 
 char *os_lang = NULL;
 static FILE *fConsole = NULL;
+
+static QSharedPointer<LogEmitter> le;
 
 #define PATH_MAX 1024
 static char crashhandler_fn[PATH_MAX];
@@ -63,9 +40,13 @@ static void mumbleMessageOutputQString(QtMsgType type, const QString &msg) {
 #define LOG(f, msg) fprintf(f, "<%c>%s %s\n", c, \
 		qPrintable(QDateTime::currentDateTime().toString(QLatin1String("yyyy-MM-dd hh:mm:ss.zzz"))), qPrintable(msg))
 
-	LOG(stderr, msg);
-	LOG(fConsole, msg);
+	QString date = QDateTime::currentDateTime().toString(QLatin1String("yyyy-MM-dd hh:mm:ss.zzz"));
+	QString fmsg = QString::fromLatin1("<%1>%2 %3").arg(c).arg(date).arg(msg);
+	fprintf(stderr, "%s\n", qPrintable(fmsg));
+	fprintf(fConsole, "%s\n", qPrintable(fmsg));
 	fflush(fConsole);
+
+	le->addLogEntry(fmsg);
 
 	if (type == QtFatalMsg) {
 		CFStringRef csMsg = CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%s\n\nThe error has been logged. Please submit your log file to the Mumble project if the problem persists."), qPrintable(msg));
@@ -75,11 +56,11 @@ static void mumbleMessageOutputQString(QtMsgType type, const QString &msg) {
 	}
 }
 
+#if QT_VERSION < 0x050000
 static void mumbleMessageOutput(QtMsgType type, const char *msg) {
 	mumbleMessageOutputQString(type, QString::fromUtf8(msg));
 }
-
-#if QT_VERSION >= 0x050000
+#elif QT_VERSION >= 0x050000
 static void mumbleMessageOutputWithContext(QtMsgType type, const QMessageLogContext &ctx, const QString &msg) {
 	Q_UNUSED(ctx);
 	mumbleMessageOutputQString(type, msg);
@@ -124,13 +105,13 @@ int sigs[] = { SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGEMT, SIGFPE, SIGBUS, SIGSEG
 #define NSIGS sizeof(sigs)/sizeof(sigs[0])
 
 static void crashhandler_signals_setup() {
-	for (int i = 0; i < NSIGS; i++) {
+	for (size_t i = 0; i < NSIGS; i++) {
 		signal(sigs[i], crashhandler_signal_handler);
 	}
 }
 
 static void crashhandler_signals_restore() {
-	for (int i = 0; i < NSIGS; i++) {
+	for (size_t i = 0; i < NSIGS; i++) {
 		signal(sigs[i], NULL);
 	}
 }
@@ -155,6 +136,11 @@ void os_init() {
 
 	const char *home = getenv("HOME");
 	const char *logpath = "/Library/Logs/Mumble.log";
+
+	// Make a copy of the global LogEmitter, such that
+	// os_macx.mm doesn't have to consider the deletion
+	// of the Global object and its LogEmitter object.
+	le = g.le;
 
 	if (home) {
 		size_t len = strlen(home) + strlen(logpath) + 1;

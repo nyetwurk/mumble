@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "murmur_pch.h"
 
@@ -46,6 +21,109 @@
 
 #include "OSInfo.h"
 #include "Version.h"
+
+#if defined(Q_OS_WIN)
+// regString converts a wchar_t string of size to a
+// QString. If the string contains a NUL value, that
+// NUL value will terminate the string.
+static QString regString(wchar_t *string, int size) {
+	if (size <= 0) {
+		return QString();
+	}
+	// If string contains a NUL, adjust the size such
+	// that the NUL is not included in the returned
+	// string.
+	const size_t adjustedSize = wcsnlen(string, static_cast<size_t>(size));
+	// The return value of wcsnlen is <= size which is
+	// an int, so casting adjustedSize to int is safe.
+	return QString::fromWCharArray(string, static_cast<int>(adjustedSize));
+}
+
+/// Query for a Windows 10-style displayable version.
+///
+/// This returns a string of the kind:
+///
+///    Windows 10 Pro x86 1607 14390.0
+///
+/// which is:
+///
+///    $ProductName $Arch $Version $Build.$Ubr
+///
+/// Of note, $Version is formatted as YYMM.
+/// So, 1607 is a Windows 10 update released in July 2016.
+///
+/// This function can be called on non-Windows 10 OSes.
+/// On those, this functions fails to query some of the
+/// registry keys used for building the version string
+/// to be returned. Because of that, it is safe to call
+/// this function, and if it returns an empty/null string,
+/// a legacy version string can be displayed.
+static QString win10DisplayableVersion() {
+	HKEY key = 0;
+	LONG err = 0;
+	DWORD len = 0;
+	wchar_t buf[64];
+	DWORD dw = 0;
+
+	QString productName;
+	QString releaseId;
+	QString currentBuild;
+	QString ubr;
+	QString arch;
+
+	err = RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", NULL, KEY_READ, &key);
+	if (err != ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return QString();
+	}
+
+	len = sizeof(buf);
+	err = RegQueryValueEx(key, L"ProductName", NULL, NULL, reinterpret_cast<LPBYTE>(&buf[0]), &len);
+	if (err != ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return QString();
+	}
+	productName = regString(buf, static_cast<int>(len / sizeof(buf[0])));
+
+	len = sizeof(buf);
+	err = RegQueryValueEx(key, L"ReleaseId", NULL, NULL, reinterpret_cast<LPBYTE>(&buf[0]), &len);
+	if (err != ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return QString();
+	}
+	releaseId = regString(buf, static_cast<int>(len / sizeof(buf[0])));
+
+	len = sizeof(buf);
+	err = RegQueryValueEx(key, L"CurrentBuild", NULL, NULL, reinterpret_cast<LPBYTE>(&buf[0]), &len);
+	if (err != ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return QString();
+	}
+	currentBuild = regString(buf, static_cast<int>(len / sizeof(buf[0])));
+
+	len = sizeof(dw);
+	err = RegQueryValueEx(key, L"UBR", NULL, NULL, reinterpret_cast<LPBYTE>(&dw), &len);
+	if (err != ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return QString();
+	}
+	ubr = QString::number(static_cast<ulong>(dw), 10);
+
+	RegCloseKey(key);
+
+	_SYSTEM_INFO si;
+	GetNativeSystemInfo(&si);
+	if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) {
+		arch = QLatin1String("x64");
+	} else if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) {
+		arch = QLatin1String("x86");
+	} else {
+		arch = QLatin1String("(unknown arch)");
+	}
+
+	return QString::fromLatin1("%1 %2 %3 %4.%5").arg(productName, arch, releaseId, currentBuild, ubr);
+}
+#endif
 
 QString OSInfo::getMacHash(const QList<QHostAddress> &qlBind) {
 	QString first, second, third;
@@ -127,11 +205,19 @@ QString OSInfo::getOSVersion() {
 	if (err != noErr)
 		return QString::number(QSysInfo::MacintoshVersion, 16);
 
-	const NXArchInfo *local = NXGetLocalArchInfo();
-	const NXArchInfo *ai = local ? NXGetArchInfoFromCpuType(local->cputype, CPU_SUBTYPE_MULTIPLE) : NULL;
-	const char *arch = ai ? ai->name : "unknown";
+	char *buildno = NULL;
+	char buildno_buf[32];
+	size_t sz_buildno_buf = sizeof(buildno);
+	int ret = sysctlbyname("kern.osversion", buildno_buf, &sz_buildno_buf, NULL, 0);
+	if (ret == 0) {
+		buildno = &buildno_buf[0];
+	}
 
-	os.sprintf("%i.%i.%i (%s)", major, minor, bugfix, arch);
+	os.sprintf("%lu.%lu.%lu %s",
+	           static_cast<unsigned long>(major),
+	           static_cast<unsigned long>(minor),
+	           static_cast<unsigned long>(bugfix),
+	           buildno ? buildno : "unknown");
 #else
 #ifdef Q_OS_LINUX
 	QProcess qp;
@@ -170,6 +256,16 @@ QString OSInfo::getOSVersion() {
 QString OSInfo::getOSDisplayableVersion() {
 #if defined(Q_OS_WIN)
 	QString osdispver;
+
+	// Try to query for a Windows 10-style
+	// displayable version. If this call
+	// returns a non-empty string, we're
+	// on Windows 10 or greater and should
+	// show that string.
+	osdispver = win10DisplayableVersion();
+	if (!osdispver.isEmpty()) {
+		return osdispver;
+	}
 
 	OSVERSIONINFOEXW ovi;
 	memset(&ovi, 0, sizeof(ovi));
@@ -415,9 +511,6 @@ void OSInfo::fillXml(QDomDocument &doc, QDomElement &root, const QString &os, co
 	BOOL bIsWow64 = FALSE;
 	IsWow64Process(GetCurrentProcess(), &bIsWow64);
 	bIs64 = bIsWow64;
-#elif defined(Q_OS_MAC)
-	size_t len = sizeof(bool);
-	sysctlbyname("hw.cpu64bit_capable", &bIs64, &len, NULL, 0);
 #else
 	bIs64 = (QSysInfo::WordSize == 64);
 #endif
