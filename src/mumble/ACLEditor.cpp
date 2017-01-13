@@ -1,33 +1,7 @@
-/* copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2009-2011, Stefan Hacker <dd0t@users.sourceforge.net>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -62,6 +36,15 @@ ACLEditor::ACLEditor(int channelparentid, QWidget *p) : QDialog(p) {
 	// Until I come around implementing it hide the password fields
 	qleChannelPassword->hide();
 	qlChannelPassword->hide();
+
+	if (g.sh->uiVersion >= 0x010300) {
+		qsbChannelMaxUsers->setRange(0, INT_MAX);
+		qsbChannelMaxUsers->setValue(0);
+		qsbChannelMaxUsers->setSpecialValueText(tr("Default server value"));
+	} else {
+		qlChannelMaxUsers->hide();
+		qsbChannelMaxUsers->hide();
+	}
 
 	qlChannelID->hide();
 
@@ -103,6 +86,15 @@ ACLEditor::ACLEditor(int channelid, const MumbleProto::ACL &mea, QWidget *p) : Q
 
 	qsbChannelPosition->setRange(INT_MIN, INT_MAX);
 	qsbChannelPosition->setValue(pChannel->iPosition);
+
+	if (g.sh->uiVersion >= 0x010300) {
+		qsbChannelMaxUsers->setRange(0, INT_MAX);
+		qsbChannelMaxUsers->setValue(pChannel->uiMaxUsers);
+		qsbChannelMaxUsers->setSpecialValueText(tr("Default server value"));
+	} else {
+		qlChannelMaxUsers->hide();
+		qsbChannelMaxUsers->hide();
+	}
 
 	QGridLayout *grid = new QGridLayout(qgbACLpermissions);
 
@@ -260,7 +252,7 @@ void ACLEditor::accept() {
 
 	// Update channel state
 	if (bAddChannelMode) {
-		g.sh->createChannel(iChannel, qleChannelName->text(), rteChannelDescription->text(), qsbChannelPosition->value(), qcbChannelTemporary->isChecked());
+		g.sh->createChannel(iChannel, qleChannelName->text(), rteChannelDescription->text(), qsbChannelPosition->value(), qcbChannelTemporary->isChecked(), qsbChannelMaxUsers->value());
 	} else {
 		bool needs_update = false;
 
@@ -273,13 +265,17 @@ void ACLEditor::accept() {
 			needs_update = true;
 		}
 		if (rteChannelDescription->isModified() && (pChannel->qsDesc != rteChannelDescription->text())) {
-			const QString &msg = rteChannelDescription->text();
-			mpcs.set_description(u8(msg));
+			const QString &descriptionText = rteChannelDescription->text();
+			mpcs.set_description(u8(descriptionText));
 			needs_update = true;
-			Database::setBlob(sha1(msg), msg.toUtf8());
+			Database::setBlob(sha1(descriptionText), descriptionText.toUtf8());
 		}
 		if (pChannel->iPosition != qsbChannelPosition->value()) {
 			mpcs.set_position(qsbChannelPosition->value());
+			needs_update = true;
+		}
+		if (pChannel->uiMaxUsers != static_cast<unsigned int>(qsbChannelMaxUsers->value())) {
+			mpcs.set_max_users(qsbChannelMaxUsers->value());
 			needs_update = true;
 		}
 		if (needs_update)

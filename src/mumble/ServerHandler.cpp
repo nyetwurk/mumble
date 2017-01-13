@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -94,8 +69,17 @@ ServerHandler::ServerHandler() {
 	bUdp = true;
 	tConnectionTimeoutTimer = NULL;
 	uiVersion = 0;
+	iInFlightTCPPings = 0;
 
-	// For some strange reason, on Win32, we have to call supportsSsl before the cipher list is ready.
+	// Historically, the qWarning line below initialized OpenSSL for us.
+	// It used to have this comment:
+	//
+	//     "For some strange reason, on Win32, we have to call
+	//      supportsSsl before the cipher list is ready."
+	//
+	// Now, OpenSSL is initialized in main() via MumbleSSL::initialize(),
+	// but since it's handy to have the OpenSSL version available, we
+	// keep this one around as well.
 	qWarning("OpenSSL Support: %d (%s)", QSslSocket::supportsSsl(), SSLeay_version(SSLEAY_VERSION));
 
 	MumbleSSL::addSystemCA();
@@ -160,7 +144,7 @@ void ServerHandler::udpReady() {
 		quint16 senderPort;
 		qusUdp->readDatagram(encrypted, qMin(2048U, buflen), &senderAddr, &senderPort);
 
-		if (!(senderAddr == qhaRemote) || (senderPort != usPort))
+		if (!(HostAddress(senderAddr) == HostAddress(qhaRemote)) || (senderPort != usPort))
 			continue;
 
 		ConnectionPtr connection(cConnection);
@@ -409,6 +393,11 @@ void ServerHandler::sendPing() {
 	if (!connection)
 		return;
 
+	if (g.s.iMaxInFlightTCPPings >= 0 && iInFlightTCPPings >= g.s.iMaxInFlightTCPPings) {
+		serverConnectionClosed(QAbstractSocket::UnknownSocketError, tr("Server is not responding to TCP pings"));
+		return;
+	}
+
 	CryptState &cs = connection->csCrypt;
 
 	quint64 t = tTimestamp.elapsed();
@@ -443,6 +432,8 @@ void ServerHandler::sendPing() {
 	mpp.set_tcp_packets(static_cast<int>(boost::accumulators::count(accTCP)));
 
 	sendMessage(mpp);
+
+	iInFlightTCPPings += 1;
 }
 
 void ServerHandler::message(unsigned int msgType, const QByteArray &qbaMsg) {
@@ -470,6 +461,11 @@ void ServerHandler::message(unsigned int msgType, const QByteArray &qbaMsg) {
 		if (msg.ParseFromArray(qbaMsg.constData(), qbaMsg.size())) {
 			ConnectionPtr connection(cConnection);
 			if (!connection) return;
+
+			// Reset in-flight TCP ping counter to 0.
+			// We've received a ping. That means the
+			// connection is still OK.
+			iInFlightTCPPings = 0;
 
 			CryptState &cs = connection->csCrypt;
 			cs.uiRemoteGood = msg.good();
@@ -549,6 +545,8 @@ void ServerHandler::serverConnectionConnected() {
 	ConnectionPtr connection(cConnection);
 	if (!connection) return;
 
+	iInFlightTCPPings = 0;
+
 	tConnectionTimeoutTimer->stop();
 
 	if (g.s.bQoS)
@@ -602,12 +600,21 @@ void ServerHandler::serverConnectionConnected() {
 		QMutexLocker qml(&qmUdp);
 
 		qhaRemote = connection->peerAddress();
+		qhaLocal = connection->localAddress();
+		if (qhaLocal.isNull()) {
+			qFatal("ServerHandler: qhaLocal is unexpectedly a null addr");
+		}
 
 		qusUdp = new QUdpSocket(this);
-		if (qhaRemote.protocol() == QAbstractSocket::IPv6Protocol)
-			qusUdp->bind(QHostAddress(QHostAddress::AnyIPv6), 0);
-		else
-			qusUdp->bind(QHostAddress(QHostAddress::Any), 0);
+		if (g.s.bUdpForceTcpAddr) {
+			qusUdp->bind(qhaLocal, 0);
+		} else {
+			if (qhaRemote.protocol() == QAbstractSocket::IPv6Protocol) {
+				qusUdp->bind(QHostAddress(QHostAddress::AnyIPv6), 0);
+			} else {
+				qusUdp->bind(QHostAddress(QHostAddress::Any), 0);
+			}
+		}
 
 		connect(qusUdp, SIGNAL(readyRead()), this, SLOT(udpReady()));
 
@@ -615,17 +622,17 @@ void ServerHandler::serverConnectionConnected() {
 
 #if defined(Q_OS_UNIX)
 			int val = 0xe0;
-			if (setsockopt(qusUdp->socketDescriptor(), IPPROTO_IP, IP_TOS, &val, sizeof(val))) {
+			if (setsockopt(static_cast<int>(qusUdp->socketDescriptor()), IPPROTO_IP, IP_TOS, &val, sizeof(val))) {
 				val = 0x80;
-				if (setsockopt(qusUdp->socketDescriptor(), IPPROTO_IP, IP_TOS, &val, sizeof(val)))
+				if (setsockopt(static_cast<int>(qusUdp->socketDescriptor()), IPPROTO_IP, IP_TOS, &val, sizeof(val)))
 					qWarning("ServerHandler: Failed to set TOS for UDP Socket");
 			}
 #if defined(SO_PRIORITY)
 			socklen_t optlen = sizeof(val);
-			if (getsockopt(qusUdp->socketDescriptor(), SOL_SOCKET, SO_PRIORITY, &val, &optlen) == 0) {
+			if (getsockopt(static_cast<int>(qusUdp->socketDescriptor()), SOL_SOCKET, SO_PRIORITY, &val, &optlen) == 0) {
 				if (val == 0) {
 					val = 6;
-					setsockopt(qusUdp->socketDescriptor(), SOL_SOCKET, SO_PRIORITY, &val, sizeof(val));
+					setsockopt(static_cast<int>(qusUdp->socketDescriptor()), SOL_SOCKET, SO_PRIORITY, &val, sizeof(val));
 				}
 			}
 #endif
@@ -680,13 +687,14 @@ void ServerHandler::joinChannel(unsigned int uiSession, unsigned int channel) {
 	sendMessage(mpus);
 }
 
-void ServerHandler::createChannel(unsigned int parent_, const QString &name, const QString &description, unsigned int position, bool temporary) {
+void ServerHandler::createChannel(unsigned int parent_id, const QString &name, const QString &description, unsigned int position, bool temporary, unsigned int maxUsers) {
 	MumbleProto::ChannelState mpcs;
-	mpcs.set_parent(parent_);
+	mpcs.set_parent(parent_id);
 	mpcs.set_name(u8(name));
 	mpcs.set_description(u8(description));
 	mpcs.set_position(position);
 	mpcs.set_temporary(temporary);
+	mpcs.set_max_users(maxUsers);
 	sendMessage(mpcs);
 }
 

@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -40,6 +15,8 @@
 #include "Database.h"
 #include "Log.h"
 #include "Plugins.h"
+#include "LogEmitter.h"
+#include "DeveloperConsole.h"
 #include "Global.h"
 #include "LCD.h"
 #ifdef USE_BONJOUR
@@ -55,9 +32,12 @@
 #include "NetworkConfig.h"
 #include "CrashReporter.h"
 #include "SocketRPC.h"
+#include "SSL.h"
 #include "MumbleApplication.h"
 #include "ApplicationPalette.h"
 #include "Themes.h"
+#include "UserLockFile.h"
+#include "License.h"
 
 #if defined(USE_STATIC_QT_PLUGINS) && QT_VERSION < 0x050000
 Q_IMPORT_PLUGIN(qtaccessiblewidgets)
@@ -112,6 +92,8 @@ int main(int argc, char **argv) {
 	a.installNativeEventFilter(&a);
 #endif
 
+	MumbleSSL::initialize();
+
 	#ifdef USE_SBCELT
 	{
 		QDir d(a.applicationVersionRootPath());
@@ -124,9 +106,10 @@ int main(int argc, char **argv) {
 
 	qsrand(QDateTime::currentDateTime().toTime_t());
 
-#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
+	g.le = QSharedPointer<LogEmitter>(new LogEmitter());
+	g.c = new DeveloperConsole();
+
 	os_init();
-#endif
 
 	bool bAllowMultiple = false;
 	bool suppressIdentity = false;
@@ -157,6 +140,12 @@ int main(int argc, char **argv) {
 					"                Allow multiple instances of the client to be started.\n"
 					"  -n, --noidentity\n"
 					"                Suppress loading of identity files (i.e., certificates.)\n"
+					"  --license\n"
+					"                Show the Mumble license.\n"
+					"  --authors\n"
+					"                Show the Mumble authors.\n"
+					"  --third-party-licenses\n"
+					"                Show licenses for third-party software used by Mumble.\n"
 					"\n"
 				);
 				QString rpcHelpBanner = MainWindow::tr(
@@ -174,10 +163,14 @@ int main(int argc, char **argv) {
 					"                Mute self\n"
 					"  unmute\n"
 					"                Unmute self\n"
+					"  togglemute\n"
+					"                Toggle self-mute status\n"
 					"  deaf\n"
 					"                Deafen self\n"
 					"  undeaf\n"
 					"                Undeafen self\n"
+					"  toggledeaf\n"
+					"                Toggle self-deafen stauts\n"
 					"\n"
 				);
 
@@ -197,6 +190,15 @@ int main(int argc, char **argv) {
 			} else if (args.at(i) == QLatin1String("-n") || args.at(i) == QLatin1String("--noidentity")) {
 				suppressIdentity = true;
 				g.s.bSuppressIdentity = true;
+			} else if (args.at(i) == QLatin1String("-license") || args.at(i) == QLatin1String("--license")) {
+				printf("%s\n", qPrintable(License::license()));
+				return 0;
+			} else if (args.at(i) == QLatin1String("-authors") || args.at(i) == QLatin1String("--authors")) {
+				printf("%s\n", qPrintable(License::authors()));
+				return 0;
+			} else if (args.at(i) == QLatin1String("-third-party-licenses") || args.at(i) == QLatin1String("--third-party-licenses")) {
+				printf("%s", qPrintable(License::printableThirdPartyLicenseInfo()));
+				return 0;
 			} else if (args.at(i) == QLatin1String("rpc")) {
 				bRpcMode = true;
 				if (args.count() - 1 > i) {
@@ -292,6 +294,25 @@ int main(int argc, char **argv) {
 		}
 	}
 
+#ifdef Q_OS_WIN
+	// The code above this block is somewhat racy, in that it might not
+	// be possible to do RPC/DBus if two processes start at almost the
+	// same time.
+	//
+	// In order to be completely sure we don't open multiple copies of
+	// Mumble, we open a lock file. The file is opened without any sharing
+	// modes enabled. This gives us exclusive access to the file.
+	// If another Mumble instance attempts to open the file, it will fail,
+	// and that instance will know to terminate itself.
+	UserLockFile userLockFile(g.qdBasePath.filePath(QLatin1String("mumble.lock")));
+	if (! bAllowMultiple) {
+		if (!userLockFile.acquire()) {
+			qWarning("Another process has already acquired the lock file at '%s'. Terminating...", qPrintable(userLockFile.path()));
+			return 1;
+		}
+	}
+#endif
+
 	// Load preferences
 	g.s.load();
 
@@ -354,11 +375,6 @@ int main(int argc, char **argv) {
 		a.installTranslator(&qttranslator);
 	}
 	
-	if (g.s.qsRegionalHost.isEmpty()) {
-		g.s.qsRegionalHost = qsSystemLocale;
-		g.s.qsRegionalHost = g.s.qsRegionalHost.remove(QRegExp(QLatin1String("^.+_"))).toLower() + QLatin1String(".mumble.info");
-	}
-
 	// Initialize proxy settings
 	NetworkConfig::SetupProxy();
 
@@ -397,6 +413,13 @@ int main(int argc, char **argv) {
 	// Main Window
 	g.mw=new MainWindow(NULL);
 	g.mw->show();
+
+#ifdef Q_OS_WIN
+	// Set mumble_mw_hwnd in os_win.cpp.
+	// Used by APIs in ASIOInput, DirectSound and GlobalShortcut_win that require a HWND.
+	extern HWND mumble_mw_hwnd;
+	mumble_mw_hwnd = GetForegroundWindow();
+#endif
 
 #ifdef USE_DBUS
 	new MumbleDBus(g.mw);
@@ -540,6 +563,9 @@ int main(int argc, char **argv) {
 
 	delete g.o;
 
+	delete g.c;
+	g.le.clear();
+
 	DeferInit::run_destroyers();
 
 	delete Global::g_global_struct;
@@ -552,6 +578,16 @@ int main(int argc, char **argv) {
 #if (GOOGLE_PROTOBUF_VERSION >= 2001000)
 	google::protobuf::ShutdownProtobufLibrary();
 #endif
+#endif
+
+#ifdef Q_OS_WIN
+	// Release the userLockFile.
+	//
+	// It is important that we release it before we attempt to
+	// restart Mumble (if requested). If we do not release it
+	// before that, the new instance might not be able to start
+	// correctly.
+	userLockFile.release();
 #endif
 	
 	// At this point termination of our process is immenent. We can safely

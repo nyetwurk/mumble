@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 /* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
    Copyright (C) 2008, Andreas Messer <andi@bupfen.de>
 
@@ -118,7 +123,7 @@ void AudioInputDialog::load(const Settings &r) {
 	loadSlider(qsTransmitMax, iroundf(r.fVADmax * 32767.0f + 0.5f));
 	loadSlider(qsFrames, (r.iFramesPerPacket == 1) ? 1 : (r.iFramesPerPacket/2 + 1));
 	loadSlider(qsDoublePush, iroundf(static_cast<float>(r.uiDoublePush) / 1000.f + 0.5f));
-	loadSlider(qsPTTHold, r.uiPTTHold);
+	loadSlider(qsPTTHold, static_cast<int>(r.pttHold));
 
 	if (r.vsVAD == Settings::Amplitude)
 		qrbAmplitude->setChecked(true);
@@ -157,7 +162,7 @@ void AudioInputDialog::save() const {
 	s.iFramesPerPacket = qsFrames->value();
 	s.iFramesPerPacket = (s.iFramesPerPacket == 1) ? 1 : ((s.iFramesPerPacket-1) * 2);
 	s.uiDoublePush = qsDoublePush->value() * 1000;
-	s.uiPTTHold = qsPTTHold->value();
+	s.pttHold = qsPTTHold->value();
 	s.atTransmit = static_cast<Settings::AudioTransmit>(qcbTransmit->currentIndex());
 
 	// Idle auto actions
@@ -322,9 +327,9 @@ void AudioInputDialog::on_qpbPushClickBrowseOff_clicked() {
 void AudioInputDialog::on_qpbPushClickPreview_clicked() {
 	AudioOutputPtr ao = g.ao;
 	if (ao) {
-		AudioOutputSample *s = ao->playSample(qlePushClickPathOn->text());
-		if (s)
-			connect(s, SIGNAL(playbackFinished()), this, SLOT(continuePlayback()));
+		AudioOutputSample *sample = ao->playSample(qlePushClickPathOn->text());
+		if (sample)
+			connect(sample, SIGNAL(playbackFinished()), this, SLOT(continuePlayback()));
 		else // If we fail to playback the first play on play at least off
 			ao->playSample(qlePushClickPathOff->text());
 
@@ -383,9 +388,9 @@ void AudioInputDialog::on_qcbSystem_currentIndexChanged(int) {
 
 void AudioInputDialog::on_Tick_timeout() {
 	AudioInputPtr ai = g.ai;
-
-	if (ai.get() == NULL || ! ai->sppPreprocess)
+	if (!ai || !ai->sppPreprocess) {
 		return;
+	}
 
 	abSpeech->iBelow = qsTransmitMin->value();
 	abSpeech->iAbove = qsTransmitMax->value();

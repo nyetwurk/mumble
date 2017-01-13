@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+# Copyright 2005-2017 The Mumble Developers. All rights reserved.
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file at the root of the
+# Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 # Generates the Mumble palette generation class from
 # template_source and writes it into target after
@@ -51,7 +56,7 @@ role_multisetter_template="""		m_%(prop)s = brush;
 
 paletteupdate_template ="""
 			if (m_%(prop)s) {
-				palette.setBrush(QPalette::%(group)s, QPalette::%(role)s, *m_%(prop)s);
+				newPalette.setBrush(QPalette::%(group)s, QPalette::%(role)s, *m_%(prop)s);
 			}
 """
 

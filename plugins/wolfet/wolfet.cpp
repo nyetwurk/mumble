@@ -1,34 +1,7 @@
-/* Copyright (C) 2009-2012, Stefan Hacker <dD0t@users.sourceforge.net>
-   Copyright (C) 2005-2012, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2012, Jan Klass <kissaki@kcode.de>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 /*
     This plugin scans the following address locations:
@@ -74,7 +47,7 @@
         Increasing when turning left.
 */
 
-#include "../mumble_plugin_win32.h"
+#include "../mumble_plugin_win32_32bit.h"
 
 static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, float *camera_pos, float *camera_front, float *camera_top, std::string &context, std::wstring &) {
 	float viewHor, viewVer;
@@ -84,7 +57,7 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 		avatar_pos[i] = avatar_front[i] = avatar_top[i] = camera_pos[i] = camera_front[i] = camera_top[i] = 0.0f;
 
 	bool ok;
-	ok = peekProc((BYTE *) 0x013E8DFC, &team, 1);
+	ok = peekProc(0x013E8DFC, &team, 1);
 	if (!ok)
 		return false;
 
@@ -92,9 +65,9 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 	if (team == 0 || team == 3)
 		return true;
 
-	ok = peekProc((BYTE *) 0x013E8CF4, avatar_pos, 12) &&   // X, Y, Z
-		peekProc((BYTE *) 0x013F9E20, &viewHor, 4) &&      // Hor-Angle
-		peekProc((BYTE *) 0x013F9E1C, &viewVer, 4);        // Ver-Angle
+	ok = peekProc(0x013E8CF4, avatar_pos, 12) &&   // X, Y, Z
+		peekProc(0x013F9E20, &viewHor, 4) &&      // Hor-Angle
+		peekProc(0x013F9E1C, &viewVer, 4);        // Ver-Angle
 
 	if (!ok)
 		return false;
@@ -118,8 +91,8 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 	// Context - concatenated server-ip, mapname and team value
 	char hostip[32];
 	char mapname[40];
-	ok = peekProc((BYTE *) 0x009FFD30, hostip, sizeof(hostip)) &&
-		peekProc((BYTE *) 0x010B4908, mapname, sizeof(hostip));
+	ok = peekProc(0x009FFD30, hostip, sizeof(hostip)) &&
+		peekProc(0x010B4908, mapname, sizeof(hostip));
 	hostip[sizeof(hostip)-1] = '\0';
 	mapname[sizeof(mapname)-1] = '\0';
 	// Context in JSON format, {} with fields ipport (server hostname), map, and team (: int)
@@ -173,10 +146,10 @@ static MumblePlugin2 wolfetplug2 = {
 	trylock
 };
 
-extern "C" __declspec(dllexport) MumblePlugin *getMumblePlugin() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin *getMumblePlugin() {
 	return &wolfetplug;
 }
 
-extern "C" __declspec(dllexport) MumblePlugin2 *getMumblePlugin2() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin2 *getMumblePlugin2() {
 	return &wolfetplug2;
 }

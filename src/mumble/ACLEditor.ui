@@ -88,6 +88,30 @@ This value enables you to change the way Mumble arranges the channels in the tre
          </property>
         </widget>
        </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="qlChannelMaxUsers">
+         <property name="text">
+          <string>Maximum Users</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QSpinBox" name="qsbChannelMaxUsers">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Maximum number of users allowed in the channel</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;b&gt;Maximum Users&lt;/b&gt;&lt;br /&gt;
+This value allows you to set the maximum number of users allowed in the channel. If the value is above zero, only that number of users will be allowed to enter the channel. If the value is zero, the maximum number of users in the channel is given by the server's default limit.</string>
+         </property>
+        </widget>
+       </item>
        <item row="10" column="1">
         <widget class="QCheckBox" name="qcbChannelTemporary">
          <property name="toolTip">
@@ -147,7 +171,7 @@ When checked the channel created will be marked as temporary. This means when th
          </property>
          <layout class="QHBoxLayout">
           <item>
-           <widget class="QComboBox" name="qcbGroupList">
+           <widget class="MUComboBox" name="qcbGroupList">
             <property name="sizePolicy">
              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -313,7 +337,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
            </widget>
           </item>
           <item row="2" column="0" colspan="2">
-           <widget class="QComboBox" name="qcbGroupAdd">
+           <widget class="MUComboBox" name="qcbGroupAdd">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -330,10 +354,10 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
              <bool>true</bool>
             </property>
             <property name="insertPolicy">
-             <enum>QComboBox::NoInsert</enum>
+             <enum>MUComboBox::NoInsert</enum>
             </property>
             <property name="sizeAdjustPolicy">
-             <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+             <enum>MUComboBox::AdjustToMinimumContentsLength</enum>
             </property>
            </widget>
           </item>
@@ -345,7 +369,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
            </widget>
           </item>
           <item row="2" column="3" colspan="2">
-           <widget class="QComboBox" name="qcbGroupRemove">
+           <widget class="MUComboBox" name="qcbGroupRemove">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -362,10 +386,10 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
              <bool>true</bool>
             </property>
             <property name="insertPolicy">
-             <enum>QComboBox::NoInsert</enum>
+             <enum>MUComboBox::NoInsert</enum>
             </property>
             <property name="sizeAdjustPolicy">
-             <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+             <enum>MUComboBox::AdjustToMinimumContentsLength</enum>
             </property>
            </widget>
           </item>
@@ -579,7 +603,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="qcbACLGroup">
+             <widget class="MUComboBox" name="qcbACLGroup">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -608,7 +632,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="qcbACLUser">
+             <widget class="MUComboBox" name="qcbACLUser">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -625,7 +649,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
                <bool>true</bool>
               </property>
               <property name="sizeAdjustPolicy">
-               <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+               <enum>MUComboBox::AdjustToMinimumContentsLength</enum>
               </property>
              </widget>
             </item>
@@ -664,10 +688,16 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
    <header>RichTextEditor.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>MUComboBox</class>
+   <extends>QComboBox</extends>
+   <header>widgets/MUComboBox.h</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>qleChannelPassword</tabstop>
   <tabstop>qsbChannelPosition</tabstop>
+  <tabstop>qsbChannelMaxUsers</tabstop>
   <tabstop>qcbChannelTemporary</tabstop>
   <tabstop>qcbGroupList</tabstop>
   <tabstop>qpbGroupAdd</tabstop>

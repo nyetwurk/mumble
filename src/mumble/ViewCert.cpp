@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -37,11 +12,43 @@ static QString decode_utf8_qssl_string(const QString &input) {
 	return QUrl::fromPercentEncoding(i.replace(QLatin1String("\\x"), QLatin1String("%")).toLatin1());
 }
 
-static QString decode_utf8_qssl_string(const QStringList &list) {
-	if (list.count() > 0) {
-		return decode_utf8_qssl_string(list.at(0));
+#if QT_VERSION >= 0x050000
+static QStringList processQSslCertificateInfo(QStringList in) {
+	QStringList list;
+	foreach (QString str, in) {
+		list << decode_utf8_qssl_string(str);
 	}
-	return QString();
+	return list;
+}
+#else
+static QStringList processQSslCertificateInfo(QString in) {
+	QStringList out;
+	out << decode_utf8_qssl_string(in);
+	return out;
+}
+#endif
+
+static void addQSslCertificateInfo(QStringList &l, const QString &label, const QStringList &items) {
+	foreach (const QString &item, items) {
+		l << QString(QLatin1String("%1: %2")).arg(label, item);
+	}
+}
+
+static QString certificateFriendlyName(const QSslCertificate &cert) {
+	QStringList cnList = processQSslCertificateInfo(cert.subjectInfo(QSslCertificate::CommonName));
+	QStringList orgList = processQSslCertificateInfo(cert.subjectInfo(QSslCertificate::Organization));
+
+	QString cn;
+	if (cnList.count() > 0) {
+		cn = cnList.at(0);
+	}
+
+	QString org;
+	if (orgList.count() > 0) {
+		org = orgList.at(0);
+	}
+
+	return QString(QLatin1String("%1 %2")).arg(cn, org);
 }
 
 ViewCert::ViewCert(QList<QSslCertificate> cl, QWidget *p) : QDialog(p) {
@@ -59,7 +66,7 @@ ViewCert::ViewCert(QList<QSslCertificate> cl, QWidget *p) : QDialog(p) {
 	qlwChain->setObjectName(QLatin1String("Chain"));
 
 	foreach(QSslCertificate c, qlCerts)
-		qlwChain->addItem(tr("%1 %2").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::CommonName)), decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::Organization))));
+		qlwChain->addItem(certificateFriendlyName(c));
 	h->addWidget(qlwChain);
 
 	qcbDetails=new QGroupBox(tr("Certificate details"), this);
@@ -80,6 +87,16 @@ ViewCert::ViewCert(QList<QSslCertificate> cl, QWidget *p) : QDialog(p) {
 	resize(510,300);
 }
 
+QString ViewCert::prettifyDigest(QString digest) {
+	QString pretty_digest = digest.toUpper();
+	int step = 2;
+	QChar separator = QChar::fromLatin1(':');
+	for (int i = step; i < pretty_digest.size(); i += step + 1) {
+		pretty_digest.insert(i, separator);
+	}
+	return pretty_digest;
+}
+
 void ViewCert::on_Chain_currentRowChanged(int idx) {
 	qlwCert->clear();
 	if ((idx < 0) || (idx >= qlCerts.size()))
@@ -88,17 +105,20 @@ void ViewCert::on_Chain_currentRowChanged(int idx) {
 	QStringList l;
 	const QSslCertificate &c=qlCerts.at(idx);
 
-	l << tr("Common Name: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::CommonName)));
-	l << tr("Organization: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::Organization)));
-	l << tr("Subunit: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::OrganizationalUnitName)));
-	l << tr("Country: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::CountryName)));
-	l << tr("Locality: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::LocalityName)));
-	l << tr("State: %1").arg(decode_utf8_qssl_string(c.subjectInfo(QSslCertificate::StateOrProvinceName)));
+	addQSslCertificateInfo(l, tr("Common Name"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::CommonName)));
+	addQSslCertificateInfo(l, tr("Organization"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::Organization)));
+	addQSslCertificateInfo(l, tr("Subunit"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::OrganizationalUnitName)));
+	addQSslCertificateInfo(l, tr("Country"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::CountryName)));
+	addQSslCertificateInfo(l, tr("Locality"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::LocalityName)));
+	addQSslCertificateInfo(l, tr("State"), processQSslCertificateInfo(c.subjectInfo(QSslCertificate::StateOrProvinceName)));
 	l << tr("Valid from: %1").arg(c.effectiveDate().toString());
 	l << tr("Valid to: %1").arg(c.expiryDate().toString());
 	l << tr("Serial: %1").arg(QString::fromLatin1(c.serialNumber().toHex()));
 	l << tr("Public Key: %1 bits %2").arg(c.publicKey().length()).arg((c.publicKey().algorithm() == QSsl::Rsa) ? tr("RSA") : tr("DSA"));
-	l << tr("Digest (SHA-1): %1").arg(QString::fromLatin1(c.digest(QCryptographicHash::Sha1).toHex()));
+	l << tr("Digest (SHA-1): %1").arg(prettifyDigest(QString::fromLatin1(c.digest(QCryptographicHash::Sha1).toHex())));
+#if QT_VERSION >= 0x050000
+	l << tr("Digest (SHA-256): %1").arg(prettifyDigest(QString::fromLatin1(c.digest(QCryptographicHash::Sha256).toHex())));
+#endif
 
 #if QT_VERSION >= 0x050000
 	const QMultiMap<QSsl::AlternativeNameEntryType, QString> &alts = c.subjectAlternativeNames();
@@ -125,12 +145,12 @@ void ViewCert::on_Chain_currentRowChanged(int idx) {
 
 	l << QString();
 	l << tr("Issued by:");
-	l << tr("Common Name: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::CommonName)));
-	l << tr("Organization: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::Organization)));
-	l << tr("Unit Name: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::OrganizationalUnitName)));
-	l << tr("Country: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::CountryName)));
-	l << tr("Locality: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::LocalityName)));
-	l << tr("State: %1").arg(decode_utf8_qssl_string(c.issuerInfo(QSslCertificate::StateOrProvinceName)));
+	addQSslCertificateInfo(l, tr("Common Name"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::CommonName)));
+	addQSslCertificateInfo(l, tr("Organization"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::Organization)));
+	addQSslCertificateInfo(l, tr("Unit Name"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::OrganizationalUnitName)));
+	addQSslCertificateInfo(l, tr("Country"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::CountryName)));
+	addQSslCertificateInfo(l, tr("Locality"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::LocalityName)));
+	addQSslCertificateInfo(l, tr("State"), processQSslCertificateInfo(c.issuerInfo(QSslCertificate::StateOrProvinceName)));
 
 	qlwCert->addItems(l);
 }

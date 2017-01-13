@@ -2,7 +2,7 @@
 <context>
     <name>ACLEditor</name>
     <message>
-        <location filename="ACLEditor.cpp" line="+109"/>
+        <location filename="ACLEditor.cpp" line="+127"/>
         <source>Deny</source>
         <translation>Deny</translation>
     </message>
@@ -22,18 +22,24 @@
         <translation>Deny %1</translation>
     </message>
     <message>
-        <location line="-66"/>
+        <location line="-84"/>
         <source>Mumble - Add channel</source>
         <translation>Mumble - Add channel</translation>
     </message>
     <message>
-        <location line="+24"/>
-        <location line="+167"/>
+        <location line="+11"/>
+        <location line="+50"/>
+        <source>Default server value</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="-28"/>
+        <location line="+176"/>
         <source>Failed: Invalid channel</source>
         <translation>Failed: Invalid channel</translation>
     </message>
     <message>
-        <location line="-155"/>
+        <location line="-164"/>
         <source>Mumble - Edit %1</source>
         <translation>Mumble - Edit %1</translation>
     </message>
@@ -43,7 +49,7 @@
         <translation>ID: %1</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+46"/>
         <source>This grants the %1 privilege. If a privilege is both allowed and denied, it is denied.&lt;br /&gt;%2</source>
         <translation>This grants the %1 privilege. If a privilege is both allowed and denied, it is denied.&lt;br /&gt;%2</translation>
     </message>
@@ -486,8 +492,20 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
     </message>
     <message>
         <location/>
-        <source>ChannelID</source>
-        <translation>ChannelID</translation>
+        <source>Maximum Users</source>
+        <translation>Maximum Users</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Maximum number of users allowed in the channel</source>
+        <translation>Maximum number of users allowed in the channel</translation>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;b&gt;Maximum Users&lt;/b&gt;&lt;br /&gt;
+This value allows you to set the maximum number of users allowed in the channel. If the value is above zero, only that number of users will be allowed to enter the channel. If the value is zero, the maximum number of users in the channel is given by the server&apos;s default limit.</source>
+        <translation>&lt;b&gt;Maximum Users&lt;/b&gt;&lt;br /&gt;?
+This value allows you to set the maximum number of users allowed in the channel. If the value is above zero, only that number of users will be allowed to enter the channel. If the value is zero, the maximum number of users in the channel is given by the server&apos;s default limit.</translation>
     </message>
 </context>
 <context>
@@ -679,11 +697,11 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
     </message>
     <message>
         <location line="+30"/>
-        <source>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;Copyright %3 The Mumble team&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</source>
-        <translation>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;Copyright %3 The Mumble team&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</translation>
+        <source>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;%3&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</source>
+        <translation>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;%3&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+12"/>
         <source>&amp;About Mumble</source>
         <translation>&amp;About Mumble</translation>
     </message>
@@ -788,72 +806,72 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
     <message>
         <location/>
         <source>&lt;b&gt;Reset&lt;/b&gt;&lt;br/&gt;Reset the paths for the files to their default.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;Reset&lt;/b&gt;&lt;br/&gt;Reset the paths for the files to their default.</translation>
     </message>
     <message>
         <location/>
         <source>Browse for on audio file</source>
-        <translation type="unfinished"/>
+        <translation>Browse for on audio file</translation>
     </message>
     <message>
         <location/>
         <source>Browse for off audio file</source>
-        <translation type="unfinished"/>
+        <translation>Browse for off audio file</translation>
     </message>
     <message>
         <location/>
         <source>Off</source>
-        <translation type="unfinished"/>
+        <translation>Off</translation>
     </message>
     <message>
         <location/>
         <source>On</source>
-        <translation type="unfinished"/>
+        <translation>On</translation>
     </message>
     <message>
         <location/>
         <source>Preview the audio cues</source>
-        <translation type="unfinished"/>
+        <translation>Preview the audio cues</translation>
     </message>
     <message>
         <location/>
         <source>Use SNR based speech detection</source>
-        <translation type="unfinished"/>
+        <translation>Use SNR based speech detection</translation>
     </message>
     <message>
         <location/>
         <source>Signal to Noise</source>
-        <translation type="unfinished"/>
+        <translation>Signal to Noise</translation>
     </message>
     <message>
         <location/>
         <source>&lt;b&gt;This sets speech detection to use Amplitude.&lt;/b&gt;&lt;br /&gt;In this mode, the raw strength of the input signal is used to detect speech.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;This sets speech detection to use Amplitude.&lt;/b&gt;&lt;br /&gt;In this mode, the raw strength of the input signal is used to detect speech.</translation>
     </message>
     <message>
         <location/>
         <source>Amplitude</source>
-        <translation type="unfinished"/>
+        <translation>Amplitude</translation>
     </message>
     <message>
         <location/>
         <source>Voice &amp;Hold</source>
-        <translation type="unfinished"/>
+        <translation>Voice &amp; Hold</translation>
     </message>
     <message>
         <location/>
         <source>How long to keep transmitting after silence</source>
-        <translation type="unfinished"/>
+        <translation>How long to keep transmitting after silence</translation>
     </message>
     <message>
         <location/>
         <source>Silence Below</source>
-        <translation type="unfinished"/>
+        <translation>Silence Below</translation>
     </message>
     <message>
         <location/>
         <source>&lt;b&gt;This sets the trigger values for voice detection.&lt;/b&gt;&lt;br /&gt;Use this together with the Audio Statistics window to manually tune the trigger values for detecting speech. Input values below &quot;Silence Below&quot; always count as silence. Values above &quot;Speech Above&quot; always count as voice. Values in between will count as voice if you&apos;re already talking, but will not trigger a new detection.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;This sets the trigger values for voice detection.&lt;/b&gt;&lt;br /&gt;Use this together with the Audio Statistics window to manually tune the trigger values for detecting speech. Input values below &quot;Silence Below&quot; always count as silence. Values above &quot;Speech Above&quot; always count as voice. Values in between will count as voice if you&apos;re already talking, but will not trigger a new detection.</translation>
     </message>
     <message>
         <location/>
@@ -953,21 +971,6 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
     <message>
         <location/>
         <source>Disabled</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location/>
-        <source>Mixed</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location/>
-        <source>Multichannel</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location/>
-        <source>Echo</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -1091,7 +1094,7 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="AudioInput.cpp" line="+529"/>
+        <location filename="AudioInput.cpp" line="+531"/>
         <source>Server maximum network bandwidth is only %1 kbit/s. Audio quality auto-adjusted to %2 kbit/s (%3 ms)</source>
         <translation type="unfinished"/>
     </message>
@@ -1128,6 +1131,21 @@ Contains the list of members inherited by the current channel. Untick &lt;i&gt;I
     <message>
         <location/>
         <source>after</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Echo Cancellation</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Mixed echo cancellation</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Multichannel echo cancellation</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -2377,7 +2395,7 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
         <translation type="unfinished"/>
     </message>
     <message numerus="yes">
-        <location filename="BanEditor.cpp" line="+201"/>
+        <location filename="BanEditor.cpp" line="+202"/>
         <source>Ban List - %n Ban(s)</source>
         <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform></translation>
     </message>
@@ -2385,7 +2403,7 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
 <context>
     <name>CertView</name>
     <message>
-        <location filename="Cert.cpp" line="+43"/>
+        <location filename="Cert.cpp" line="+51"/>
         <source>Name</source>
         <translation type="unfinished"/>
     </message>
@@ -2478,7 +2496,7 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="main.cpp" line="+463"/>
+        <location filename="main.cpp" line="+494"/>
         <source>&lt;b&gt;Certificate Expiry:&lt;/b&gt; Your certificate is about to expire. You need to renew it, or you will no longer be able to connect to servers you are registered on.</source>
         <translation type="unfinished"/>
     </message>
@@ -2973,7 +2991,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
 <context>
     <name>ClientUser</name>
     <message>
-        <location filename="ClientUser.cpp" line="+134"/>
+        <location filename="ClientUser.cpp" line="+135"/>
         <source>Friend</source>
         <translation type="unfinished"/>
     </message>
@@ -3090,18 +3108,18 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
 <context>
     <name>ConnectDialog</name>
     <message>
-        <location filename="ConnectDialog.cpp" line="+996"/>
+        <location filename="ConnectDialog.cpp" line="+1022"/>
         <source>Connecting to %1</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-591"/>
-        <location line="+591"/>
+        <location line="-617"/>
+        <location line="+617"/>
         <source>Enter username</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-591"/>
+        <location line="-617"/>
         <source>Adding host %1</source>
         <translation type="unfinished"/>
     </message>
@@ -3168,18 +3186,18 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+345"/>
+        <location line="+350"/>
         <source>&amp;Connect</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+74"/>
         <source>&amp;Filters</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <location filename="ConnectDialog.ui"/>
-        <location filename="ConnectDialog.cpp" line="-401"/>
+        <location filename="ConnectDialog.cpp" line="-423"/>
         <source>Users</source>
         <translation type="unfinished"/>
     </message>
@@ -3189,7 +3207,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+1097"/>
+        <location line="+1143"/>
         <source>Failed to fetch server list</source>
         <translation type="unfinished"/>
     </message>
@@ -3250,7 +3268,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
     </message>
     <message>
         <location/>
-        <location filename="ConnectDialog.cpp" line="-745"/>
+        <location filename="ConnectDialog.cpp" line="-786"/>
         <source>&amp;Edit...</source>
         <translation type="unfinished"/>
     </message>
@@ -3356,7 +3374,7 @@ Username to send to the server. Be aware that the server can impose restrictions
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="ConnectDialog.cpp" line="-121"/>
+        <location filename="ConnectDialog.cpp" line="-126"/>
         <source>Add Server</source>
         <translation type="unfinished"/>
     </message>
@@ -3416,7 +3434,7 @@ Label of the server. This is what the server will be named like in your server l
 <context>
     <name>CoreAudioSystem</name>
     <message>
-        <location filename="CoreAudio.cpp" line="+87"/>
+        <location filename="CoreAudio.cpp" line="+90"/>
         <source>Default Device</source>
         <translation type="unfinished"/>
     </message>
@@ -3540,7 +3558,7 @@ Label of the server. This is what the server will be named like in your server l
 <context>
     <name>Database</name>
     <message>
-        <location filename="Database.cpp" line="+118"/>
+        <location filename="Database.cpp" line="+117"/>
         <source>Mumble failed to initialize a database in any
 of the possible locations.</source>
         <translation>Mumble failed to initialise a database in any
@@ -3647,7 +3665,12 @@ of the possible locations.</translation>
 <context>
     <name>GlobalShortcutConfig</name>
     <message>
-        <location filename="GlobalShortcut.cpp" line="+654"/>
+        <location filename="GlobalShortcut.cpp" line="+565"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mumble can currently only use mouse buttons and keyboard modifier keys (Alt, Ctrl, Cmd, etc.) for global shortcuts.&lt;/p&gt;&lt;p&gt;If you want more flexibility, you can add Mumble as a trusted accessibility program in the Security &amp; Privacy section of your Mac&apos;s System Preferences.&lt;/p&gt;&lt;p&gt;In the Security &amp; Privacy preference pane, change to the Privacy tab. Then choose Accessibility (near the bottom) in the list to the left. Finally, add Mumble to the list of trusted accessibility programs.&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+115"/>
         <source>Shortcuts</source>
         <translation type="unfinished"/>
     </message>
@@ -3759,7 +3782,7 @@ of the possible locations.</translation>
 <context>
     <name>GlobalShortcutX</name>
     <message>
-        <location filename="GlobalShortcut_unix.cpp" line="+357"/>
+        <location filename="GlobalShortcut_unix.cpp" line="+379"/>
         <source>Mouse %1</source>
         <translation type="unfinished"/>
     </message>
@@ -4198,12 +4221,12 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location line="+21"/>
-        <location line="+69"/>
+        <location line="+45"/>
         <source>None</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-68"/>
+        <location line="-44"/>
         <source>Only with users</source>
         <translation type="unfinished"/>
     </message>
@@ -4228,7 +4251,13 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+19"/>
+        <source>&lt;a href=&quot;%1&quot;&gt;Browse&lt;/a&gt;</source>
+        <extracomment>This link is located next to the theme heading in the ui config and opens the user theme directory</extracomment>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>User Interface</source>
         <translation type="unfinished"/>
     </message>
@@ -4477,13 +4506,13 @@ This field describes the size of an LCD device. The size is given either in pixe
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="MainWindow.cpp" line="+139"/>
-        <location line="+2422"/>
+        <location filename="MainWindow.cpp" line="+145"/>
+        <location line="+2561"/>
         <source>Root</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-2368"/>
+        <location line="-2507"/>
         <source>Push-to-Talk</source>
         <comment>Global Shortcut</comment>
         <translation type="unfinished"/>
@@ -4561,29 +4590,29 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location filename="MainWindow.cpp" line="+4"/>
-        <location line="+22"/>
-        <location line="+2489"/>
+        <location line="+153"/>
+        <location line="+2503"/>
         <source>Mumble -- %1</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-2484"/>
+        <location line="-2629"/>
         <source>&amp;Window</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <location line="+2"/>
-        <location line="+161"/>
+        <location line="+184"/>
         <source>Minimize</source>
         <translation>Minimise</translation>
     </message>
     <message>
-        <location line="-161"/>
+        <location line="-184"/>
         <source>Ctrl+M</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+160"/>
+        <location line="+183"/>
         <source>Close</source>
         <translation type="unfinished"/>
     </message>
@@ -4593,7 +4622,7 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation>Mumble is currently connected to a server. Do you want to Close or Minimise it?</translation>
     </message>
     <message>
-        <location line="-224"/>
+        <location line="-247"/>
         <source>Mute Self</source>
         <comment>Global Shortcut</comment>
         <translation type="unfinished"/>
@@ -4636,18 +4665,18 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location line="+75"/>
-        <location line="+2500"/>
+        <location line="+2645"/>
         <source>&lt;center&gt;Not connected&lt;/center&gt;</source>
         <oldsource>Not connected</oldsource>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-2169"/>
+        <location line="-2270"/>
         <source>Clear</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+50"/>
         <source>Opening URL %1</source>
         <translation type="unfinished"/>
     </message>
@@ -4688,7 +4717,7 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location line="+15"/>
-        <location line="+206"/>
+        <location line="+205"/>
         <source>Connecting to server %1.</source>
         <translation type="unfinished"/>
     </message>
@@ -4699,39 +4728,79 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location line="+76"/>
-        <location line="+1418"/>
+        <location line="+1486"/>
         <source>Transmit Mode set to Continuous</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-1327"/>
-        <source>&lt;p&gt;No build information or OS version available.&lt;/p&gt;</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="-1392"/>
         <source>&lt;p&gt;%1 (%2)&lt;br /&gt;%3&lt;/p&gt;</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+69"/>
         <source>&lt;h2&gt;Voice channel&lt;/h2&gt;&lt;p&gt;Encrypted with 128 bit OCB-AES128&lt;br /&gt;%1 ms average latency (%4 deviation)&lt;/p&gt;</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-123"/>
-        <location line="+376"/>
+        <location line="-173"/>
+        <location line="+443"/>
         <source>Register yourself as %1</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-376"/>
-        <location line="+376"/>
+        <location line="-443"/>
+        <location line="+443"/>
         <source>&lt;p&gt;You are about to register yourself on this server. This action cannot be undone, and your username cannot be changed once this is done. You will forever be known as &apos;%1&apos; on this server.&lt;/p&gt;&lt;p&gt;Are you sure you want to register yourself?&lt;/p&gt;</source>
         <translation>&lt;p&gt;You are about to register yourself on this server. This action cannot be undone, and your username cannot be changed once this is done. You will forever be known as &apos;%1&apos; on this server.&lt;/p&gt;&lt;p&gt;Are you sure you want to register yourself?&lt;/p&gt;</translation>
     </message>
     <message>
+        <location line="-344"/>
+        <source>&lt;h2&gt;Version&lt;/h2&gt;&lt;p&gt;Protocol %1&lt;/p&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>&lt;p&gt;No build information or OS version available&lt;/p&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>The connection is encrypted and authenticated using %1 and uses %2 as the key exchange mechanism (%3)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>The connection is encrypted using %1, with %2 for message authentication and %3 as the key exchange mechanism (%4)</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>The connection is secured by the cipher suite that OpenSSL identifies as %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>&lt;p&gt;The connection provides perfect forward secrecy&lt;/p&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
         <location line="+2"/>
+        <source>&lt;p&gt;The connection does not provide perfect forward secrecy&lt;/p&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>&lt;h2&gt;Control channel&lt;/h2&gt;&lt;p&gt;The connection uses %1&lt;/p&gt;%2%3&lt;p&gt;%4 ms average latency (%5 deviation)&lt;/p&gt;&lt;p&gt;Remote host %6 (port %7)&lt;/p&gt;</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Voice channel is sent over control channel</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+274"/>
         <source>Register user %1</source>
         <translation type="unfinished"/>
     </message>
@@ -4758,17 +4827,17 @@ This field describes the size of an LCD device. The size is given either in pixe
     <message>
         <location line="+72"/>
         <location line="+263"/>
-        <location line="+615"/>
+        <location line="+616"/>
         <source>Message to channel %1</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+55"/>
         <source>Connected.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+104"/>
+        <location line="+110"/>
         <source>Server presented a certificate which failed verification.</source>
         <translation type="unfinished"/>
     </message>
@@ -4790,7 +4859,7 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+125"/>
+        <location line="+109"/>
         <source>Choose image file</source>
         <translation type="unfinished"/>
     </message>
@@ -4813,12 +4882,7 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation>Image format not recognised.</translation>
     </message>
     <message>
-        <location line="-1806"/>
-        <source>Voice channel is sent over control channel.</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location line="-1018"/>
+        <location line="-2953"/>
         <source>&amp;User</source>
         <translation type="unfinished"/>
     </message>
@@ -4874,39 +4938,54 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+47"/>
+        <source>Mumble - Minimal View -- %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+63"/>
         <source>Cancel</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+602"/>
+        <location line="+233"/>
+        <source>Save Image As...</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Save Image File</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Could not save image: %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+382"/>
         <source>Change your comment</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <location line="+41"/>
-        <location line="+1405"/>
+        <location line="+1473"/>
         <source>Transmit Mode set to Voice Activity</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-1400"/>
-        <location line="+1404"/>
+        <location line="-1468"/>
+        <location line="+1472"/>
         <source>Transmit Mode set to Push-to-Talk</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-1326"/>
-        <source>&lt;h2&gt;Version&lt;/h2&gt;&lt;p&gt;Protocol %1.&lt;/p&gt;</source>
+        <location line="-1327"/>
+        <source>&lt;p&gt;Connected users: %1/%2&lt;/p&gt;</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+14"/>
-        <source>&lt;h2&gt;Control channel&lt;/h2&gt;&lt;p&gt;Encrypted with %1 bit %2&lt;br /&gt;%3 ms average latency (%4 deviation)&lt;/p&gt;&lt;p&gt;Remote host %5 (port %6)&lt;/p&gt;</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
-        <location line="+18"/>
+        <location line="+15"/>
         <source>UDP Statistics</source>
         <translation type="unfinished"/>
     </message>
@@ -4952,12 +5031,12 @@ This field describes the size of an LCD device. The size is given either in pixe
     </message>
     <message>
         <location line="+4"/>
-        <location line="+1476"/>
+        <location line="+1505"/>
         <source>&amp;View Certificate</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-1198"/>
+        <location line="-1210"/>
         <location line="+19"/>
         <source>Enter reason</source>
         <translation type="unfinished"/>
@@ -4972,12 +5051,12 @@ This field describes the size of an LCD device. The size is given either in pixe
         <location line="+99"/>
         <location line="+4"/>
         <location line="+259"/>
-        <location line="+615"/>
+        <location line="+616"/>
         <source>To %1: %2</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-977"/>
+        <location line="-978"/>
         <location line="+103"/>
         <source>Message to %1</source>
         <translation type="unfinished"/>
@@ -5054,12 +5133,12 @@ This field describes the size of an LCD device. The size is given either in pixe
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+46"/>
+        <location line="+47"/>
         <source>About Qt</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+442"/>
+        <location line="+453"/>
         <source>SSL Verification failed: %1</source>
         <translation type="unfinished"/>
     </message>
@@ -5135,7 +5214,8 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+221"/>
+        <location line="-2174"/>
+        <location line="+2379"/>
         <source>Images (*.png *.jpg *.jpeg)</source>
         <translation type="unfinished"/>
     </message>
@@ -5707,7 +5787,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation>This will toggle minimal mode, where the log window and menu is hidden.</translation>
     </message>
     <message>
-        <location filename="Messages.cpp" line="+327"/>
+        <location filename="Messages.cpp" line="+330"/>
         <source>You muted and deafened %1.</source>
         <translation type="unfinished"/>
     </message>
@@ -5767,7 +5847,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-215"/>
+        <location line="-218"/>
         <source>Your account information can not be verified currently. Please try again later</source>
         <translation type="unfinished"/>
     </message>
@@ -5783,7 +5863,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+42"/>
         <source>You were denied %1 privileges in %2.</source>
         <translation type="unfinished"/>
     </message>
@@ -5848,7 +5928,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+40"/>
         <source>%1 connected.</source>
         <translation type="unfinished"/>
     </message>
@@ -5974,12 +6054,17 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+56"/>
+        <location line="+10"/>
+        <source>%1 renamed to %2 by %3.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location line="+51"/>
         <source>%1 disconnected.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+111"/>
+        <location line="+115"/>
         <location line="+1"/>
         <source>Server</source>
         <comment>message from</comment>
@@ -6026,7 +6111,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-506"/>
+        <location line="-515"/>
         <source>You were unmuted by %1.</source>
         <translation type="unfinished"/>
     </message>
@@ -6061,18 +6146,18 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+409"/>
+        <location line="+418"/>
         <source>Unable to find matching CELT codecs with other clients. You will not be able to talk to all users.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-475"/>
+        <location line="-484"/>
         <source>You were muted and deafened by %1.</source>
         <oldsource>You were deafened by %1.</oldsource>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+171"/>
+        <location line="+176"/>
         <source>You were kicked from the server by %1: %2.</source>
         <translation type="unfinished"/>
     </message>
@@ -6092,7 +6177,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-74"/>
+        <location line="-79"/>
         <source>You were moved to %1 by %2.</source>
         <translation type="unfinished"/>
     </message>
@@ -6102,27 +6187,27 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="-406"/>
+        <location line="-409"/>
         <source>Server connection rejected: %1.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+156"/>
+        <location line="+158"/>
         <source>Denied: %1.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+264"/>
+        <location line="+269"/>
         <source>%1 renamed to %2.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+45"/>
+        <location line="+46"/>
         <source>%1 left channel and disconnected.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+123"/>
+        <location line="+127"/>
         <source>Message from %1</source>
         <translation type="unfinished"/>
     </message>
@@ -6137,7 +6222,7 @@ Otherwise abort and check your certificate and username.</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="main.cpp" line="-319"/>
+        <location filename="main.cpp" line="-349"/>
         <source>Usage: mumble [options] [&lt;url&gt;]
 
 &lt;url&gt; specifies a URL to connect to after startup instead of showing
@@ -6200,7 +6285,7 @@ Valid actions are:
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+190"/>
+        <location line="+220"/>
         <source>Welcome to Mumble.</source>
         <translation type="unfinished"/>
     </message>
@@ -6420,6 +6505,21 @@ the channel&apos;s context menu.</source>
     <message>
         <location/>
         <source>Reset the avatar of the selected user.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Local Volume Adjustment</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Locally adjust the user&apos;s speech volume.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>Opens a dialog with a volume slider. Use this on other users in the same room.</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -6797,7 +6897,7 @@ Prevents the client from downloading images embedded into chat messages with the
 <context>
     <name>OverlayConfig</name>
     <message>
-        <location filename="OverlayConfig.cpp" line="+90"/>
+        <location filename="OverlayConfig.cpp" line="+99"/>
         <source>To move the users, drag the little red dot.</source>
         <translation type="unfinished"/>
     </message>
@@ -6814,12 +6914,12 @@ Prevents the client from downloading images embedded into chat messages with the
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+262"/>
+        <location line="+266"/>
         <source>Overlay</source>
         <translation type="unfinished"/>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+85"/>
         <source>Choose executable</source>
         <translation type="unfinished"/>
     </message>
@@ -7392,7 +7492,7 @@ To upgrade these files to their latest versions, click the button below.</source
 <context>
     <name>PulseAudioSystem</name>
     <message>
-        <location filename="PulseAudio.cpp" line="+797"/>
+        <location filename="PulseAudio.cpp" line="+800"/>
         <source>Default Input</source>
         <translation type="unfinished"/>
     </message>
@@ -7405,7 +7505,7 @@ To upgrade these files to their latest versions, click the button below.</source
 <context>
     <name>QApplication</name>
     <message>
-        <location filename="main.cpp" line="+110"/>
+        <location filename="main.cpp" line="+120"/>
         <source>Failed to restart mumble</source>
         <translation type="unfinished"/>
     </message>
@@ -7418,7 +7518,7 @@ To upgrade these files to their latest versions, click the button below.</source
 <context>
     <name>RichTextEditor</name>
     <message>
-        <location filename="RichTextEditor.cpp" line="+257"/>
+        <location filename="RichTextEditor.cpp" line="+258"/>
         <source>Failed to load image</source>
         <translation type="unfinished"/>
     </message>
@@ -7595,7 +7695,7 @@ To upgrade these files to their latest versions, click the button below.</source
 <context>
     <name>ShortcutActionWidget</name>
     <message>
-        <location filename="GlobalShortcut.cpp" line="-576"/>
+        <location filename="GlobalShortcut.cpp" line="-602"/>
         <source>Unassigned</source>
         <translation type="unfinished"/>
     </message>
@@ -7948,7 +8048,7 @@ An access token is a text string, which can be used as a password for very simpl
         <translation type="unfinished"/>
     </message>
     <message>
-        <location filename="UserInformation.cpp" line="+106"/>
+        <location filename="UserInformation.cpp" line="+108"/>
         <source>%1w</source>
         <translation type="unfinished"/>
     </message>
@@ -8063,6 +8163,34 @@ An access token is a text string, which can be used as a password for very simpl
     <message>
         <location line="+2"/>
         <source>Channel id: %1</source>
+        <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>UserLocalVolumeDialog</name>
+    <message>
+        <location filename="UserLocalVolumeDialog.ui"/>
+        <source>Local volume for other users</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;b&gt;Adjust the volume of other users locally&lt;/b&gt;&lt;br /&gt;Mumble supports adjusting the volume of other users locally.</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location filename="UserLocalVolumeDialog.cpp" line="+46"/>
+        <source>Adjusting local volume for %1</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location filename="UserLocalVolumeDialog.ui"/>
+        <source> dB</source>
+        <translation type="unfinished"/>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the slider or the text box to change the volume of the user.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-weight:600;&quot;&gt;Attention!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Increasing the volume of a user too much can permanently damage your hearing. It may also increase the background noise of the user.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -8258,7 +8386,7 @@ An access token is a text string, which can be used as a password for very simpl
 <context>
     <name>ViewCert</name>
     <message>
-        <location filename="ViewCert.cpp" line="+50"/>
+        <location filename="ViewCert.cpp" line="+52"/>
         <source>Certificate Chain Details</source>
         <translation type="unfinished"/>
     </message>

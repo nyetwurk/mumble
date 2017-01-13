@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 #ifndef MUMBLE_MURMUR_MURMURI_H_
 #define MUMBLE_MURMUR_MURMURI_H_
 
@@ -180,6 +185,12 @@ namespace Murmur {
 			                              const Ice::Current&);
 
 			virtual void getUptime_async(const ::Murmur::AMD_Server_getUptimePtr&,
+			                             const Ice::Current&);
+
+			virtual void updateCertificate_async(const ::Murmur::AMD_Server_updateCertificatePtr&,
+			                             const std::string&,
+			                             const std::string&,
+			                             const std::string&,
 			                             const Ice::Current&);
 
 			virtual void ice_ping(const Ice::Current&) const;

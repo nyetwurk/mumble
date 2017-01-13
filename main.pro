@@ -1,3 +1,10 @@
+# Copyright 2005-2017 The Mumble Developers. All rights reserved.
+# Use of this source code is governed by a BSD-style license
+# that can be found in the LICENSE file at the root of the
+# Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
+include(compiler.pri)
+
 TEMPLATE = subdirs
 CONFIG *= ordered debug_and_release
 
@@ -31,6 +38,7 @@ SUBDIRS *= src/mumble_proto
   }
 
   win32 {
+    SUBDIRS *= 3rdparty/xinputcheck-build
     SUBDIRS *= 3rdparty/minhook-build
   }
 
@@ -45,8 +53,6 @@ SUBDIRS *= src/mumble_proto
   }
 
   win32 {
-    SUBDIRS *= 3rdparty/fx11-build-x86
-    SUBDIRS *= 3rdparty/fx11-build-x64
     SUBDIRS *= overlay
     SUBDIRS *= overlay/overlay_exe
     SUBDIRS *= overlay_winx64
@@ -56,14 +62,17 @@ SUBDIRS *= src/mumble_proto
     }
   }
 
+  contains(UNAME, OpenBSD) {
+    CONFIG *= no-overlay
+  }
+
   unix:!macx:!CONFIG(no-overlay) {
     SUBDIRS *= overlay_gl
   }
 
   macx {
-    MUMBLE_PREFIX = $$(MUMBLE_PREFIX)
-    isEmpty(MUMBLE_PREFIX) {
-      error("Missing $MUMBLE_PREFIX environment variable");
+    !CONFIG(buildenv) {
+      error("Not inside a Mumble buildenv ($MUMBLE_PREFIX environment variable is missing)");
     }
     SUBDIRS *= 3rdparty/mach-override-build
     SUBDIRS *= overlay_gl
@@ -78,6 +87,16 @@ SUBDIRS *= src/mumble_proto
 }
 
 !CONFIG(no-server) {
+  !CONFIG(no-ice) {
+    SUBDIRS *= src/murmur/murmur_ice
+  }
+  CONFIG(grpc) {
+    !system(pkg-config --atleast-version=3 protobuf) {
+      error(grpc requires protobuf>=3)
+    }
+    SUBDIRS *= src/murmur_grpcwrapper_protoc_plugin
+    SUBDIRS *= src/murmur/murmur_grpc
+  }
   SUBDIRS *= src/murmur
 }
 

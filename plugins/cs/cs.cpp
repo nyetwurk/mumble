@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 /* Copyright (C) 2009-2010, Imre Botos <zokny@users.sourceforge.net>
    Copyright (C) 2009-2012, Snares <snares@users.sourceforge.net>
    Copyright (C) 2005-2012, Thorvald Natvig <thorvald@natvig.com>
@@ -30,11 +35,11 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "../mumble_plugin_win32.h"
+#include "../mumble_plugin_win32_32bit.h"
 
 using namespace std;
 
-BYTE *pEngine;
+procptr32_t pEngine;
 
 /*  DESCRIPTION             ADDRESS             TYPE    VALUE
 
@@ -71,12 +76,12 @@ static int fetch(float *avatar_pos, float *avatar_front, float *avatar_top, floa
 	                        |                   270     T spawn
 	*/
 
-	ok = peekProc((BYTE*) pModule + 0x11D470, avatar_pos, 12) &&
-	     peekProc((BYTE*) pModule + 0x11D47C, &fViewHor, 4) &&
-	     peekProc((BYTE*) pModule + 0x11D480, &fViewVer, 4) &&
-	     peekProc((BYTE*) pModule + 0xFC228, &bConnected, 1) &&
-	     peekProc((BYTE*) pModule + 0xFBC2C, &cPlayerState, 1) &&
-	     peekProc((BYTE*) pEngine + 0x697E60, cHostAddr, 40);
+	ok = peekProc(pModule + 0x11D470, avatar_pos, 12) &&
+	     peekProc(pModule + 0x11D47C, &fViewHor, 4) &&
+	     peekProc(pModule + 0x11D480, &fViewVer, 4) &&
+	     peekProc(pModule + 0xFC228, &bConnected, 1) &&
+	     peekProc(pModule + 0xFBC2C, &cPlayerState, 1) &&
+	     peekProc(pEngine + 0x697E60, cHostAddr, 40);
 	if (!ok)
 		return false;
 
@@ -179,10 +184,10 @@ static MumblePlugin2 csplug2 = {
 	trylock
 };
 
-extern "C" __declspec(dllexport) MumblePlugin *getMumblePlugin() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin *getMumblePlugin() {
 	return &csplug;
 }
 
-extern "C" __declspec(dllexport) MumblePlugin2 *getMumblePlugin2() {
+extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin2 *getMumblePlugin2() {
 	return &csplug2;
 }

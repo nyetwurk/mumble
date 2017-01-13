@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -37,10 +12,8 @@
 #include "WebFetch.h"
 
 VersionCheck::VersionCheck(bool autocheck, QObject *p, bool focus) : QObject(p) {
-	bSilent = autocheck;
-
 	QUrl url;
-	url.setPath(focus ? QLatin1String("/focus.php") : QLatin1String("/ver.php"));
+	url.setPath(focus ? QLatin1String("/v1/banner") : QLatin1String("/v1/version-check"));
 
 	QList<QPair<QString, QString> > queryItems;
 	queryItems << qMakePair(QString::fromLatin1("ver"), QString::fromLatin1(QUrl::toPercentEncoding(QLatin1String(MUMBLE_RELEASE))));
@@ -90,16 +63,16 @@ VersionCheck::VersionCheck(bool autocheck, QObject *p, bool focus) : QObject(p) 
 		url.addQueryItem(queryPair.first, queryPair.second);
 	}
 #endif
-	WebFetch::fetch(url, this, SLOT(fetched(QByteArray,QUrl)));
+	WebFetch::fetch(QLatin1String("update"), url, this, SLOT(fetched(QByteArray,QUrl)));
 }
 
 void VersionCheck::fetched(QByteArray a, QUrl url) {
 	if (! a.isNull()) {
 		if (! a.isEmpty()) {
 #ifdef SNAPSHOT_BUILD
-			if (url.path() == QLatin1String("/focus.php")) {
+			if (url.path() == QLatin1String("/v1/banner")) {
 				g.mw->msgBox(QString::fromUtf8(a));
-			} else if (url.path() == QLatin1String("/ver.php")) {
+			} else if (url.path() == QLatin1String("/v1/version-check")) {
 #ifndef Q_OS_WIN
 				g.mw->msgBox(QString::fromUtf8(a));
 #else
@@ -133,7 +106,7 @@ void VersionCheck::fetched(QByteArray a, QUrl url) {
 						data.fdwRevocationChecks = WTD_REVOKE_NONE;
 						data.dwUnionChoice = WTD_CHOICE_FILE;
 						data.pFile = &file;
-						data.dwProvFlags = WTD_SAFER_FLAG | WTD_USE_DEFAULT_OSVER_CHECK | WTD_LIFETIME_SIGNING_FLAG;
+						data.dwProvFlags = WTD_SAFER_FLAG | WTD_USE_DEFAULT_OSVER_CHECK;
 						data.dwUIContext = WTD_UICONTEXT_INSTALL;
 
 						static GUID guid = WINTRUST_ACTION_GENERIC_VERIFY_V2;
@@ -187,7 +160,7 @@ void VersionCheck::fetched(QByteArray a, QUrl url) {
 						}
 					} else {
 						g.mw->msgBox(tr("Downloading new snapshot from %1 to %2").arg(Qt::escape(fetch.toString()), Qt::escape(filename)));
-						WebFetch::fetch(fetch, this, SLOT(fetched(QByteArray,QUrl)));
+						WebFetch::fetch(QLatin1String("dl"), fetch, this, SLOT(fetched(QByteArray,QUrl)));
 						return;
 					}
 				}
@@ -209,7 +182,7 @@ void VersionCheck::fetched(QByteArray a, QUrl url) {
 			g.mw->msgBox(QString::fromUtf8(a));
 #endif
 		}
-	} else if (bSilent) {
+	} else {
 		g.mw->msgBox(tr("Mumble failed to retrieve version information from the central server."));
 	}
 

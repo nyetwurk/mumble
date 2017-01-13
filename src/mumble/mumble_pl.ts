@@ -2,7 +2,7 @@
 <context>
     <name>ACLEditor</name>
     <message>
-        <location filename="ACLEditor.cpp" line="+109"/>
+        <location filename="ACLEditor.cpp" line="+127"/>
         <source>Deny</source>
         <translation>Zabroń</translation>
     </message>
@@ -22,18 +22,24 @@
         <translation>Zabroń %1</translation>
     </message>
     <message>
-        <location line="-66"/>
+        <location line="-84"/>
         <source>Mumble - Add channel</source>
         <translation>Mumble - Dodaj kanał</translation>
     </message>
     <message>
-        <location line="+24"/>
-        <location line="+167"/>
+        <location line="+11"/>
+        <location line="+50"/>
+        <source>Default server value</source>
+        <translation>Domyślna wartość serwera</translation>
+    </message>
+    <message>
+        <location line="-28"/>
+        <location line="+176"/>
         <source>Failed: Invalid channel</source>
         <translation>Niepowodzenie: Niepoprawny kanał</translation>
     </message>
     <message>
-        <location line="-155"/>
+        <location line="-164"/>
         <source>Mumble - Edit %1</source>
         <translation>Mumble - Edycja %1</translation>
     </message>
@@ -43,7 +49,7 @@
         <translation>ID: %1</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+46"/>
         <source>This grants the %1 privilege. If a privilege is both allowed and denied, it is denied.&lt;br /&gt;%2</source>
         <translation>Przydziela uprawnienie: &lt;i&gt;%1&lt;/i&gt;. Jeżeli uprawnienie jest jednocześnie dozwolone i zabronione, to jest zabronione.&lt;br /&gt;%2</translation>
     </message>
@@ -480,8 +486,21 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
     </message>
     <message>
         <location/>
-        <source>ChannelID</source>
-        <translation>ChannelID</translation>
+        <source>Maximum Users</source>
+        <translation>Maksymalna ilość użytkowników</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Maximum number of users allowed in the channel</source>
+        <translation>Maksymalna dozwolona liczba użytkowników tego kanału</translation>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;b&gt;Maximum Users&lt;/b&gt;&lt;br /&gt;
+This value allows you to set the maximum number of users allowed in the channel. If the value is above zero, only that number of users will be allowed to enter the channel. If the value is zero, the maximum number of users in the channel is given by the server&apos;s default limit.</source>
+        <translation>&lt;b&gt;Maksymalna ilość użytkowników&lt;/b&gt;&lt;br /&gt;
+Określa maksymalną dozwoloną ilość użytkowników na tym kanale. Jeżeli wartość jest wyższa niż 0 tylko tylu użytkowników będzie mogło dołączyć do kanału. Jeżeli wynosi 0 
+maksymalna liczba użytkowników wynosi tyle co domyślny limit serwera.</translation>
     </message>
 </context>
 <context>
@@ -673,11 +692,11 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
     </message>
     <message>
         <location line="+30"/>
-        <source>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;Copyright %3 The Mumble team&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</source>
-        <translation type="unfinished"/>
+        <source>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;%3&lt;/p&gt;&lt;p&gt;&lt;b&gt;A voice-chat utility for gamers&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</source>
+        <translation>&lt;h3&gt;Mumble (%1)&lt;/h3&gt;&lt;p&gt;%3&lt;/p&gt;&lt;p&gt;&lt;b&gt;Czat głosowy dla graczy&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&lt;tt&gt;&lt;a href=&quot;%2&quot;&gt;%2&lt;/a&gt;&lt;/tt&gt;&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+12"/>
         <source>&amp;About Mumble</source>
         <translation>&amp;O Mumble</translation>
     </message>
@@ -951,21 +970,6 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
     </message>
     <message>
         <location/>
-        <source>Mixed</source>
-        <translation>Pomieszane</translation>
-    </message>
-    <message>
-        <location/>
-        <source>Multichannel</source>
-        <translation>Wielokanałowe</translation>
-    </message>
-    <message>
-        <location/>
-        <source>Echo</source>
-        <translation>Usuwanie echa</translation>
-    </message>
-    <message>
-        <location/>
         <source>&lt;b&gt;This sets speech detection to use Signal to Noise ratio.&lt;/b&gt;&lt;br /&gt;In this mode, the input is analyzed for something resembling a clear signal, and the clarity of that signal is used to trigger speech detection.</source>
         <translation>&lt;b&gt;Określa sposób detekcji głosu na stosunek Sygnału-Do-Szumu.&lt;/b&gt;&lt;br /&gt;W tym trybie sygnał wejściowy jest analizowany jako czysty, a czystość tego sygnału używana jest do włączania transmisji głosowej.</translation>
     </message>
@@ -1085,7 +1089,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
         <translation>Czas, w którym kontynuowana jest transmisja po puszczeniu przycisku aktywacji</translation>
     </message>
     <message>
-        <location filename="AudioInput.cpp" line="+529"/>
+        <location filename="AudioInput.cpp" line="+531"/>
         <source>Server maximum network bandwidth is only %1 kbit/s. Audio quality auto-adjusted to %2 kbit/s (%3 ms)</source>
         <translation>Maksymalne pasmo dźwięku na serwerze to tylko %1 kbit/s. Jakość dźwięku została automatycznie zmieniona na %2 kbit/s (%3 ms)</translation>
     </message>
@@ -1123,6 +1127,21 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
         <location/>
         <source>after</source>
         <translation>po</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Echo Cancellation</source>
+        <translation>Usuwanie echa</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Mixed echo cancellation</source>
+        <translation>Mieszane usuwanie echa</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Multichannel echo cancellation</source>
+        <translation>Wielokanałowe usuwanie echa</translation>
     </message>
 </context>
 <context>
@@ -1435,7 +1454,7 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
     <message>
         <location/>
         <source>while other users talk</source>
-        <translation>gdy inni użytkownicy mówią</translation>
+        <translation>gdy inni mówią</translation>
     </message>
     <message>
         <location/>
@@ -1490,37 +1509,37 @@ Contains the list of members inherited by the current channel. Uncheck &lt;i&gt;
     <message>
         <location/>
         <source>Advanced Attenuation Options</source>
-        <translation type="unfinished"/>
+        <translation>Zaawansowane opcje tłumienia</translation>
     </message>
     <message>
         <location/>
         <source>If checked, Mumble will only attenuate applications that are using the same output source as Mumble</source>
-        <translation type="unfinished"/>
+        <translation>Jeśli opcja jest zaznaczona, Mumble wytłumi tylko aplikacje, które używają tego samego urządzenia wyjścia co Mumble.</translation>
     </message>
     <message>
         <location/>
         <source>&lt;b&gt;Attenuate only applications using the same output as Mumble&lt;/b&gt;&lt;br /&gt;If checked, applications that use a different output than Mumble will not be attenuated.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;Tłum aplikacje używające tego samego urządzenia wyjścia co Mumble&lt;/b&gt;&lt;br /&gt;Aplikacje, które używają innego urządzenia wyjścia nie będą wytłumiane.</translation>
     </message>
     <message>
         <location/>
         <source>Only attenuate applications using the same output device</source>
-        <translation type="unfinished"/>
+        <translation>Tłum aplikacje używające tego samego urządzenia wyjścia</translation>
     </message>
     <message>
         <location/>
         <source>If checked, PulseAudio loopback modules will be attenuated</source>
-        <translation type="unfinished"/>
+        <translation>Aplikacje używające tego samego urządzenia wyjścia będą tłumione</translation>
     </message>
     <message>
         <location/>
         <source>&lt;b&gt;Attenuate PulseAudio loopback modules&lt;/b&gt;&lt;br /&gt;If loopback modules are linked to Mumble&apos;s output device/sink, they will also be attenuated.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;Tłumienie aplikacji&lt;/b&gt;&lt;br /&gt;Jeśli aplikacje używają tego samego urządzenia wyjścia co Mumble zostaną wytłumione.</translation>
     </message>
     <message>
         <location/>
         <source>Attenuate PulseAudio loopback modules</source>
-        <translation type="unfinished"/>
+        <translation>Tłum aplikacje o...</translation>
     </message>
 </context>
 <context>
@@ -2364,15 +2383,15 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
         <translation>Wyczyść</translation>
     </message>
     <message numerus="yes">
-        <location filename="BanEditor.cpp" line="+201"/>
+        <location filename="BanEditor.cpp" line="+202"/>
         <source>Ban List - %n Ban(s)</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>Lista banów - %n Ban</numerusform><numerusform>Lista banów - %n Banów</numerusform><numerusform>Lista banów - %n Banów</numerusform></translation>
     </message>
 </context>
 <context>
     <name>CertView</name>
     <message>
-        <location filename="Cert.cpp" line="+43"/>
+        <location filename="Cert.cpp" line="+51"/>
         <source>Name</source>
         <translation>Nazwa</translation>
     </message>
@@ -2427,7 +2446,7 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
     <message>
         <location line="+4"/>
         <source>The file&apos;s permissions could not be set. No certificate and key has been written. Please use another file.</source>
-        <translation type="unfinished"/>
+        <translation>Nie udało się uzyskać praw dostępu do pliku. Certyfikat oraz klucz nie zostały zapisane. Proszę użyć innego pliku.</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -2465,7 +2484,7 @@ Speak loudly, as when you are annoyed or excited. Decrease the volume in the sou
         <translation>Użytkownik Mumble</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="+463"/>
+        <location filename="main.cpp" line="+494"/>
         <source>&lt;b&gt;Certificate Expiry:&lt;/b&gt; Your certificate is about to expire. You need to renew it, or you will no longer be able to connect to servers you are registered on.</source>
         <translation>&lt;b&gt;Wygaśnięcie certyfikatu:&lt;/b&gt; Twój certyfikat niedługo straci ważność. Musisz go odnowić, jeżeli tego nie zrobisz nie będziesz w stanie połączyć się z serwerami, na których jesteś zarejestrowany.</translation>
     </message>
@@ -2948,7 +2967,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
 <context>
     <name>ClientUser</name>
     <message>
-        <location filename="ClientUser.cpp" line="+134"/>
+        <location filename="ClientUser.cpp" line="+135"/>
         <source>Friend</source>
         <translation>Znajomy</translation>
     </message>
@@ -3065,18 +3084,18 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
 <context>
     <name>ConnectDialog</name>
     <message>
-        <location filename="ConnectDialog.cpp" line="+996"/>
+        <location filename="ConnectDialog.cpp" line="+1022"/>
         <source>Connecting to %1</source>
         <translation>Łączenie do %1</translation>
     </message>
     <message>
-        <location line="-591"/>
-        <location line="+591"/>
+        <location line="-617"/>
+        <location line="+617"/>
         <source>Enter username</source>
         <translation>Podaj nazwę użytkownika</translation>
     </message>
     <message>
-        <location line="-591"/>
+        <location line="-617"/>
         <source>Adding host %1</source>
         <translation>Dodawanie hosta %1</translation>
     </message>
@@ -3143,18 +3162,18 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
         <translation>%1 kbit/s</translation>
     </message>
     <message>
-        <location line="+345"/>
+        <location line="+350"/>
         <source>&amp;Connect</source>
         <translation>&amp;Połącz</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+74"/>
         <source>&amp;Filters</source>
         <translation>&amp;Filtry</translation>
     </message>
     <message>
         <location filename="ConnectDialog.ui"/>
-        <location filename="ConnectDialog.cpp" line="-401"/>
+        <location filename="ConnectDialog.cpp" line="-423"/>
         <source>Users</source>
         <translation>Użytkowników</translation>
     </message>
@@ -3164,7 +3183,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
         <translation>Wersja</translation>
     </message>
     <message>
-        <location line="+1097"/>
+        <location line="+1143"/>
         <source>Failed to fetch server list</source>
         <translation>Nie udało się załadować listy serwerów</translation>
     </message>
@@ -3225,7 +3244,7 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
     </message>
     <message>
         <location/>
-        <location filename="ConnectDialog.cpp" line="-745"/>
+        <location filename="ConnectDialog.cpp" line="-786"/>
         <source>&amp;Edit...</source>
         <translation>&amp;Edytuj...</translation>
     </message>
@@ -3330,7 +3349,7 @@ Username to send to the server. Be aware that the server can impose restrictions
         <translation>Etykieta</translation>
     </message>
     <message>
-        <location filename="ConnectDialog.cpp" line="-121"/>
+        <location filename="ConnectDialog.cpp" line="-126"/>
         <source>Add Server</source>
         <translation>Dodaj serwer</translation>
     </message>
@@ -3364,33 +3383,33 @@ Label of the server. This is what the server will be named like in your server l
     <message>
         <location/>
         <source>Local server label</source>
-        <translation type="unfinished"/>
+        <translation>Lokalna etykieta serwera</translation>
     </message>
     <message>
         <location/>
         <source>127.0.0.1</source>
-        <translation type="unfinished"/>
+        <translation>127.0.0.1</translation>
     </message>
     <message>
         <location/>
         <source>64738</source>
-        <translation type="unfinished"/>
+        <translation>64738</translation>
     </message>
     <message>
         <location/>
         <source>Your username</source>
-        <translation type="unfinished"/>
+        <translation>Twój pseudonim</translation>
     </message>
     <message>
         <location/>
         <source>Your password</source>
-        <translation type="unfinished"/>
+        <translation>Twoje hasło</translation>
     </message>
 </context>
 <context>
     <name>CoreAudioSystem</name>
     <message>
-        <location filename="CoreAudio.cpp" line="+87"/>
+        <location filename="CoreAudio.cpp" line="+90"/>
         <source>Default Device</source>
         <translation>Urządzenie domyślne</translation>
     </message>
@@ -3405,7 +3424,7 @@ Label of the server. This is what the server will be named like in your server l
     <message>
         <location line="+6"/>
         <source>&lt;p&gt;&lt;b&gt;We&apos;re terribly sorry, but it seems Mumble has crashed. Do you want to send a crash report to the Mumble developers?&lt;/b&gt;&lt;/p&gt;&lt;p&gt;The crash report contains a partial copy of Mumble&apos;s memory at the time it crashed, and will help the developers fix the problem.&lt;/p&gt;</source>
-        <translation>&lt;p&gt;&lt;b&gt;Okropnie nam przykro, ale wygląda na to, że Mumble zostało niepodziewanie zamknięte. Czy chcesz wysłać raport z błędem do twórców programu?&lt;/b&gt;&lt;/p&gt;&lt;p&gt;Raport ten zawiera kopię pamięci Mumble z momentu, w którym program przestał funkcjonować, pomoże to w dużej mierze naszej drużynie szybko usunąć błąd, który spowodował ten problem.&lt;/p&gt;</translation>
+        <translation>&lt;p&gt;&lt;b&gt;Okropnie nam przykro, ale wygląda na to, że Mumble zostało niespodziewanie zamknięte. Czy chcesz wysłać raport z błędem do twórców programu?&lt;/b&gt;&lt;/p&gt;&lt;p&gt;Raport ten zawiera kopię pamięci Mumble z momentu, w którym program przestał funkcjonować, pomoże to w dużej mierze naszej drużynie szybko usunąć błąd, który spowodował ten problem.&lt;/p&gt;</translation>
     </message>
     <message>
         <location line="+8"/>
@@ -3514,7 +3533,7 @@ Label of the server. This is what the server will be named like in your server l
 <context>
     <name>Database</name>
     <message>
-        <location filename="Database.cpp" line="+118"/>
+        <location filename="Database.cpp" line="+117"/>
         <source>Mumble failed to initialize a database in any
 of the possible locations.</source>
         <translation>Nie udało się zainicjalizować bazy danych w żadnej z podanych lokacji.</translation>
@@ -3620,7 +3639,13 @@ of the possible locations.</source>
 <context>
     <name>GlobalShortcutConfig</name>
     <message>
-        <location filename="GlobalShortcut.cpp" line="+654"/>
+        <location filename="GlobalShortcut.cpp" line="+565"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mumble can currently only use mouse buttons and keyboard modifier keys (Alt, Ctrl, Cmd, etc.) for global shortcuts.&lt;/p&gt;&lt;p&gt;If you want more flexibility, you can add Mumble as a trusted accessibility program in the Security &amp; Privacy section of your Mac&apos;s System Preferences.&lt;/p&gt;&lt;p&gt;In the Security &amp; Privacy preference pane, change to the Privacy tab. Then choose Accessibility (near the bottom) in the list to the left. Finally, add Mumble to the list of trusted accessibility programs.&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mumble obecnie może używać tylko przycisków myszy oraz modyfikatorów klawiszy klawiatury (Alt, Ctrl, Cmd, itd.) jako globalnych skrótów. 
+&lt;/p&gt;&lt;p&gt; Jeśli chcesz więcej elastyczności, możesz dodać Mumble do zaufanych programów w sekcji ustawień Zabezpieczenia i Prywatność Twojego systemu Mac. &lt;/p&gt;&lt;p&gt;W ustawieniach Zabezpieczenia i Prywatność należy wejść w zakładkę Prywatność. Później należy wybrać Dostępność (u dołu strony) z listy na lewo. Na końcu należy dodać Mumble do listy zaufanych programów.&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+        <location line="+115"/>
         <source>Shortcuts</source>
         <translation>Skróty</translation>
     </message>
@@ -3732,7 +3757,7 @@ of the possible locations.</source>
 <context>
     <name>GlobalShortcutX</name>
     <message>
-        <location filename="GlobalShortcut_unix.cpp" line="+357"/>
+        <location filename="GlobalShortcut_unix.cpp" line="+379"/>
         <source>Mouse %1</source>
         <translation>Mysz %1</translation>
     </message>
@@ -3900,7 +3925,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location line="+1"/>
         <source>You self-muted</source>
-        <translation type="unfinished"/>
+        <translation>Wyciszyłeś się</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3930,22 +3955,22 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location line="+3"/>
         <source>You self-unmuted</source>
-        <translation type="unfinished"/>
+        <translation>Wyłączyłeś wyciszenie</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>You self-deafened</source>
-        <translation type="unfinished"/>
+        <translation>Ogłuszyłeś się</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>You self-undeafened</source>
-        <translation type="unfinished"/>
+        <translation>Wyłączyłeś ogłuszenie</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>User renamed</source>
-        <translation type="unfinished"/>
+        <translation>Zmieniono pseudonim użytkownika</translation>
     </message>
     <message>
         <location line="+59"/>
@@ -4174,12 +4199,12 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location line="+21"/>
-        <location line="+69"/>
+        <location line="+45"/>
         <source>None</source>
         <translation>Żadne</translation>
     </message>
     <message>
-        <location line="-68"/>
+        <location line="-44"/>
         <source>Only with users</source>
         <translation>Tylko z użytkownikami</translation>
     </message>
@@ -4204,7 +4229,13 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <translation>Przenieś</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+19"/>
+        <source>&lt;a href=&quot;%1&quot;&gt;Browse&lt;/a&gt;</source>
+        <extracomment>This link is located next to the theme heading in the ui config and opens the user theme directory</extracomment>
+        <translation>&lt;a href=&quot;%1&quot;&gt;Przeglądaj&lt;/a&gt;</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>User Interface</source>
         <translation>Interfejs</translation>
     </message>
@@ -4432,34 +4463,34 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location/>
         <source>Show transmit mode dropdown in toolbar</source>
-        <translation type="unfinished"/>
+        <translation>Pokazuj tryb nadawania w menu rozwijanym</translation>
     </message>
     <message>
         <location/>
         <source>Theme</source>
-        <translation type="unfinished"/>
+        <translation>Motyw</translation>
     </message>
     <message>
         <location/>
         <source>Theme to use to style the user interface</source>
-        <translation type="unfinished"/>
+        <translation>Motyw używany do zmiany wyglądu interfejsu</translation>
     </message>
     <message>
         <location/>
         <source>&lt;b&gt;Configures which theme the Mumble user interface should be styled with&lt;/b&gt;&lt;br /&gt;Mumble will pick up themes from certain directories and display them in this list. The one you select will be used to customize the visual appearance of Mumble. This includes colors, icons and more.</source>
-        <translation type="unfinished"/>
+        <translation>&lt;b&gt;Ustawia styl motywu Mumble&lt;/b&gt;&lt;br /&gt;Mumble wyszuka motywy z pewnych lokalizacji i wyświetli je na liście. Wybrany motyw będzie użyty do dostosowania wyglądu programu. Wchodzi w to: kolorystyka, ikony i inne.</translation>
     </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="MainWindow.cpp" line="+139"/>
-        <location line="+2422"/>
+        <location filename="MainWindow.cpp" line="+145"/>
+        <location line="+2561"/>
         <source>Root</source>
         <translation>Root</translation>
     </message>
     <message>
-        <location line="-2368"/>
+        <location line="-2507"/>
         <source>Push-to-Talk</source>
         <comment>Global Shortcut</comment>
         <translation>Aktywacja przyciskiem</translation>
@@ -4537,29 +4568,29 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location filename="MainWindow.cpp" line="+4"/>
-        <location line="+22"/>
-        <location line="+2489"/>
+        <location line="+153"/>
+        <location line="+2503"/>
         <source>Mumble -- %1</source>
         <translation>Mumble -- %1</translation>
     </message>
     <message>
-        <location line="-2484"/>
+        <location line="-2629"/>
         <source>&amp;Window</source>
         <translation>&amp;Okno</translation>
     </message>
     <message>
         <location line="+2"/>
-        <location line="+161"/>
+        <location line="+184"/>
         <source>Minimize</source>
         <translation>Minimalizuj</translation>
     </message>
     <message>
-        <location line="-161"/>
+        <location line="-184"/>
         <source>Ctrl+M</source>
         <translation>Ctrl+M</translation>
     </message>
     <message>
-        <location line="+160"/>
+        <location line="+183"/>
         <source>Close</source>
         <translation>Zakończ</translation>
     </message>
@@ -4569,7 +4600,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <translation>&lt;b&gt;UWAGA!&lt;/b&gt; Mumble jest obecnie połączony z serwerem. Chcesz zamknąć czy zminimalizować program?</translation>
     </message>
     <message>
-        <location line="-224"/>
+        <location line="-247"/>
         <source>Mute Self</source>
         <comment>Global Shortcut</comment>
         <translation>Wyciszenie</translation>
@@ -4612,18 +4643,18 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location line="+75"/>
-        <location line="+2500"/>
+        <location line="+2645"/>
         <source>&lt;center&gt;Not connected&lt;/center&gt;</source>
         <oldsource>Not connected</oldsource>
         <translation>&lt;center&gt;Niepołączony&lt;/center&gt;</translation>
     </message>
     <message>
-        <location line="-2169"/>
+        <location line="-2270"/>
         <source>Clear</source>
         <translation>Wyczyść</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+50"/>
         <source>Opening URL %1</source>
         <translation>Otwieranie adresu %1</translation>
     </message>
@@ -4664,7 +4695,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location line="+15"/>
-        <location line="+206"/>
+        <location line="+205"/>
         <source>Connecting to server %1.</source>
         <translation>Łączenie z serwerem &lt;b&gt;%1&lt;/b&gt;.</translation>
     </message>
@@ -4675,39 +4706,79 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location line="+76"/>
-        <location line="+1418"/>
+        <location line="+1486"/>
         <source>Transmit Mode set to Continuous</source>
-        <translation type="unfinished"/>
+        <translation>Tryb nadawania zmieniony na Ciągły</translation>
     </message>
     <message>
-        <location line="-1327"/>
-        <source>&lt;p&gt;No build information or OS version available.&lt;/p&gt;</source>
-        <translation>&lt;p&gt;Brak informacji o wydaniu lub wersji dla twojego systemu.&lt;/p&gt;</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="-1392"/>
         <source>&lt;p&gt;%1 (%2)&lt;br /&gt;%3&lt;/p&gt;</source>
         <translation>&lt;p&gt;%1 (%2)&lt;br /&gt;%3&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+69"/>
         <source>&lt;h2&gt;Voice channel&lt;/h2&gt;&lt;p&gt;Encrypted with 128 bit OCB-AES128&lt;br /&gt;%1 ms average latency (%4 deviation)&lt;/p&gt;</source>
         <translation>&lt;h2&gt;Kanał głosowy&lt;/h2&gt;&lt;p&gt;Szyfrowanie 128 bitowym OCV-AES 128&lt;br /&gt;Średnie opóźnienie %1 ms (%4 odchylenie)&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="-123"/>
-        <location line="+376"/>
+        <location line="-173"/>
+        <location line="+443"/>
         <source>Register yourself as %1</source>
         <translation>Zarejestruj się jako %1</translation>
     </message>
     <message>
-        <location line="-376"/>
-        <location line="+376"/>
+        <location line="-443"/>
+        <location line="+443"/>
         <source>&lt;p&gt;You are about to register yourself on this server. This action cannot be undone, and your username cannot be changed once this is done. You will forever be known as &apos;%1&apos; on this server.&lt;/p&gt;&lt;p&gt;Are you sure you want to register yourself?&lt;/p&gt;</source>
         <translation>&lt;p&gt;Masz zamiar zarejestrować się na tym serwerze. Akcja ta nie może zostać cofnięta, twoja nazwa użytkownika również nie może ulec zmianie w przyszłości. Na zawsze będziesz znany jako &apos;%1&apos; na tym serwerze.&lt;/p&gt;&lt;p&gt;Czy jesteś pewien, że chcesz się zarejestrować?&lt;/p&gt;</translation>
     </message>
     <message>
+        <location line="-344"/>
+        <source>&lt;h2&gt;Version&lt;/h2&gt;&lt;p&gt;Protocol %1&lt;/p&gt;</source>
+        <translation>&lt;h2&gt;Wersja&lt;/h2&gt;&lt;p&gt;Protokół %1&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>&lt;p&gt;No build information or OS version available&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Brak informacji o numerze kompilacji lub wersji systemu operacyjnego&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>The connection is encrypted and authenticated using %1 and uses %2 as the key exchange mechanism (%3)</source>
+        <translation>Połączenie jest szyfrowane oraz uwierzytelniane przy pomocy %1 używając %2 jako mechanizm wymiany kluczy (%3)</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>The connection is encrypted using %1, with %2 for message authentication and %3 as the key exchange mechanism (%4)</source>
+        <translation>Połączenie jest szyfrowane przy pomocy %1 z użyciem %2 dla autoryzacji wiadomości oraz %3 jako mechanizmu wymiany kluczy (%4)</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>The connection is secured by the cipher suite that OpenSSL identifies as %1</source>
+        <translation>Połączenie jest zabezpieczone przez szyfrowanie, które OpenSSL identyfikuje jako %1</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>&lt;p&gt;The connection provides perfect forward secrecy&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Połączenie zapewnia doskonałe utajnienie przekazywania&lt;/p&gt;</translation>
+    </message>
+    <message>
         <location line="+2"/>
+        <source>&lt;p&gt;The connection does not provide perfect forward secrecy&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Połączenie nie zapewnia doskonałego utajnienia przekazywania&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>&lt;h2&gt;Control channel&lt;/h2&gt;&lt;p&gt;The connection uses %1&lt;/p&gt;%2%3&lt;p&gt;%4 ms average latency (%5 deviation)&lt;/p&gt;&lt;p&gt;Remote host %6 (port %7)&lt;/p&gt;</source>
+        <translation>&lt;h2&gt;Kanał kontrolny&lt;/h2&gt;&lt;p&gt;Połączenie używa %1&lt;/p&gt;%2%3&lt;p&gt;Średnie opóźnienie %4 ms  (%5 odchylenie)&lt;/p&gt;&lt;p&gt;Zdalny host %6 (port %7)&lt;/p&gt;</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>Voice channel is sent over control channel</source>
+        <translation>Dane głosowe są wysyłane przez kanał kontrolny</translation>
+    </message>
+    <message>
+        <location line="+274"/>
         <source>Register user %1</source>
         <translation>Zarejestruj użytkownika %1</translation>
     </message>
@@ -4734,19 +4805,19 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location line="+72"/>
         <location line="+263"/>
-        <location line="+615"/>
+        <location line="+616"/>
         <source>Message to channel %1</source>
         <translation>Wiadomość do kanału %1</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+55"/>
         <source>Connected.</source>
         <translation>Połączono.</translation>
     </message>
     <message>
-        <location line="+104"/>
+        <location line="+110"/>
         <source>Server presented a certificate which failed verification.</source>
-        <translation type="unfinished"/>
+        <translation>Serwer przedstawił certyfikat, którego nie udało się zweryfikować.</translation>
     </message>
     <message>
         <location line="+31"/>
@@ -4766,7 +4837,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <translation>&lt;center&gt;Wiadomość do użytkownika &apos;%1&apos;&lt;/center&gt;</translation>
     </message>
     <message>
-        <location line="+125"/>
+        <location line="+109"/>
         <source>Choose image file</source>
         <translation>Wybierz plik obrazka</translation>
     </message>
@@ -4789,12 +4860,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <translation>Nieznany format obrazka.</translation>
     </message>
     <message>
-        <location line="-1806"/>
-        <source>Voice channel is sent over control channel.</source>
-        <translation>Dane głosowe są wysyłane przez kanał kontrolny.</translation>
-    </message>
-    <message>
-        <location line="-1018"/>
+        <location line="-2953"/>
         <source>&amp;User</source>
         <translation>&amp;Użytkownik</translation>
     </message>
@@ -4832,57 +4898,72 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <location line="+3"/>
         <source>Send Text Message</source>
         <comment>Global Shortcut</comment>
-        <translation type="unfinished"/>
+        <translation>Wyślij wiadomość tekstową</translation>
     </message>
     <message>
         <location line="+89"/>
         <source>Continuous</source>
-        <translation type="unfinished"/>
+        <translation>Ciągłe</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Voice Activity</source>
-        <translation type="unfinished"/>
+        <translation>Aktywacja głosowa</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Push-to-Talk</source>
-        <translation type="unfinished"/>
+        <translation>Naciśnij-I-Mów</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+47"/>
+        <source>Mumble - Minimal View -- %1</source>
+        <translation>Mumble - Widok minimalny -- %1</translation>
+    </message>
+    <message>
+        <location line="+63"/>
         <source>Cancel</source>
         <translation>Anuluj</translation>
     </message>
     <message>
-        <location line="+602"/>
+        <location line="+233"/>
+        <source>Save Image As...</source>
+        <translation>Zapisz obraz jako...</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Save Image File</source>
+        <translation>Zapisz plik obrazu</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Could not save image: %1</source>
+        <translation>Nie można zapisać obrazu: %1</translation>
+    </message>
+    <message>
+        <location line="+382"/>
         <source>Change your comment</source>
         <translation>Edycja własnego komentarza</translation>
     </message>
     <message>
         <location line="+41"/>
-        <location line="+1405"/>
+        <location line="+1473"/>
         <source>Transmit Mode set to Voice Activity</source>
-        <translation type="unfinished"/>
+        <translation>Tryb nadawania ustawiony jako Aktywacja głosowa</translation>
     </message>
     <message>
-        <location line="-1400"/>
-        <location line="+1404"/>
+        <location line="-1468"/>
+        <location line="+1472"/>
         <source>Transmit Mode set to Push-to-Talk</source>
-        <translation type="unfinished"/>
+        <translation>Tryb nadawania ustawiony jako Naciśnij-I-Mów</translation>
     </message>
     <message>
-        <location line="-1326"/>
-        <source>&lt;h2&gt;Version&lt;/h2&gt;&lt;p&gt;Protocol %1.&lt;/p&gt;</source>
-        <translation>&lt;h2&gt;Wersja&lt;/h2&gt;&lt;p&gt;Protokół %1.&lt;/p&gt;</translation>
+        <location line="-1327"/>
+        <source>&lt;p&gt;Connected users: %1/%2&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Podłączeniu użytkownicy: %1/%2&lt;/p&gt;</translation>
     </message>
     <message>
-        <location line="+14"/>
-        <source>&lt;h2&gt;Control channel&lt;/h2&gt;&lt;p&gt;Encrypted with %1 bit %2&lt;br /&gt;%3 ms average latency (%4 deviation)&lt;/p&gt;&lt;p&gt;Remote host %5 (port %6)&lt;/p&gt;</source>
-        <translation>&lt;h2&gt;Kanał kontrolny&lt;/h2&gt;&lt;p&gt;Szyfrowanie %1 bit %2&lt;br /&gt;Średnie opóźnienie %3 ms (%4 odchylenie)&lt;/p&gt;&lt;p&gt;Zdalny host %5 (port %6)&lt;/p&gt;</translation>
-    </message>
-    <message>
-        <location line="+18"/>
+        <location line="+15"/>
         <source>UDP Statistics</source>
         <translation>Statystyki UDP</translation>
     </message>
@@ -4928,12 +5009,12 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     </message>
     <message>
         <location line="+4"/>
-        <location line="+1476"/>
+        <location line="+1505"/>
         <source>&amp;View Certificate</source>
         <translation>&amp;Zobacz certyfikat</translation>
     </message>
     <message>
-        <location line="-1198"/>
+        <location line="-1210"/>
         <location line="+19"/>
         <source>Enter reason</source>
         <translation>Podaj powód</translation>
@@ -4948,12 +5029,12 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
         <location line="+99"/>
         <location line="+4"/>
         <location line="+259"/>
-        <location line="+615"/>
+        <location line="+616"/>
         <source>To %1: %2</source>
         <translation>Do %1: %2</translation>
     </message>
     <message>
-        <location line="-977"/>
+        <location line="-978"/>
         <location line="+103"/>
         <source>Message to %1</source>
         <translation>Wiadomość do %1</translation>
@@ -4966,7 +5047,7 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location line="+16"/>
         <source>Are you sure you want to reset the avatar of user %1?</source>
-        <translation type="unfinished"/>
+        <translation>Czy jesteś pewien, że chcesz zresetować awatar użytkownika %1?</translation>
     </message>
     <message>
         <location line="+221"/>
@@ -5022,20 +5103,20 @@ Te pole opisuje rozmiar urządzenia LCD. Rozmiar jest podany w pikselach lub w z
     <message>
         <location line="+60"/>
         <source>Restart Mumble?</source>
-        <translation type="unfinished"/>
+        <translation>Zrestartować Mumble?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Some settings will only apply after a restart of Mumble. Restart Mumble now?</source>
-        <translation type="unfinished"/>
+        <translation>Niektóre z ustawień zadziałają dopiero, gdy zrestartujesz Mumble. Zrestartować teraz?</translation>
     </message>
     <message>
-        <location line="+46"/>
+        <location line="+47"/>
         <source>About Qt</source>
         <translation>O Qt</translation>
     </message>
     <message>
-        <location line="+442"/>
+        <location line="+453"/>
         <source>SSL Verification failed: %1</source>
         <translation>Weryfikacja SSL nie powiodła się: %1</translation>
     </message>
@@ -5113,9 +5194,10 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Podałeś złe hasło dla niezarejestrowanych użytkowników, spróbuj jeszcze raz.</translation>
     </message>
     <message>
-        <location line="+221"/>
+        <location line="-2174"/>
+        <location line="+2379"/>
         <source>Images (*.png *.jpg *.jpeg)</source>
-        <translation type="unfinished"/>
+        <translation>Obrazy (*.png *.jpg *.jpeg)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui"/>
@@ -5685,7 +5767,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Przełącza na widok minimalny, gdzie okno z dziennikiem i menu są ukryte.</translation>
     </message>
     <message>
-        <location filename="Messages.cpp" line="+327"/>
+        <location filename="Messages.cpp" line="+330"/>
         <source>You muted and deafened %1.</source>
         <translation>Ogłuszyłeś oraz wyciszyłeś %1.</translation>
     </message>
@@ -5745,7 +5827,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>%1 jest teraz ogłuszony oraz wyciszony.</translation>
     </message>
     <message>
-        <location line="-215"/>
+        <location line="-218"/>
         <source>Your account information can not be verified currently. Please try again later</source>
         <translation>Dane konta nie mogą zostać zweryfikowane obecnie. Spróbuj ponownie później</translation>
     </message>
@@ -5761,7 +5843,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Mumble: %1</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+42"/>
         <source>You were denied %1 privileges in %2.</source>
         <translation>Nie posiadasz uprawnienia: &lt;i&gt;%1&lt;/i&gt; w %2.</translation>
     </message>
@@ -5826,7 +5908,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Brak dostępu.</translation>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+40"/>
         <source>%1 connected.</source>
         <translation>%1 połączony.</translation>
     </message>
@@ -5863,52 +5945,52 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
     <message>
         <location line="+10"/>
         <source>You revoked your priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>Unieważniłeś swój status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>You assumed priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>Przyjąłeś status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>%1 revoked your priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>%1 unieważnił twój status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>%1 gave you priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>%1 nadał ci status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>You revoked priority speaker status for %1.</source>
-        <translation type="unfinished"/>
+        <translation>Unieważniłeś status mówcy nadrzędnego dla %1.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>You gave priority speaker status to %1.</source>
-        <translation type="unfinished"/>
+        <translation>Nadałeś status mówcy nadrzędnego dla %1.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>%1 revoked own priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>%1 unieważnił swój status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>%1 assumed priority speaker status.</source>
-        <translation type="unfinished"/>
+        <translation>%1 przyjął status mówcy nadrzędnego.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>%1 revoked priority speaker status for %2.</source>
-        <translation type="unfinished"/>
+        <translation>%1 unieważnił status mówcy nadrzędnego dla %2.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>%1 gave priority speaker status to %2.</source>
-        <translation type="unfinished"/>
+        <translation>%1 dał status mówcy nadrzędnego %2.</translation>
     </message>
     <message>
         <location line="+21"/>
@@ -5944,7 +6026,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
     <message>
         <location line="+83"/>
         <source>You moved %1 to %2.</source>
-        <translation type="unfinished"/>
+        <translation>Przeniesiono %1 do %2.</translation>
     </message>
     <message>
         <location line="+18"/>
@@ -5952,12 +6034,17 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>%1 nagrywa</translation>
     </message>
     <message>
-        <location line="+56"/>
+        <location line="+10"/>
+        <source>%1 renamed to %2 by %3.</source>
+        <translation>%3 zmienił nazwę %1 na %2.</translation>
+    </message>
+    <message>
+        <location line="+51"/>
         <source>%1 disconnected.</source>
         <translation>%1 rozłączony.</translation>
     </message>
     <message>
-        <location line="+111"/>
+        <location line="+115"/>
         <location line="+1"/>
         <source>Server</source>
         <comment>message from</comment>
@@ -6004,7 +6091,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Serwer wymaga, aby aktywacja przyciskiem była wyłączona.</translation>
     </message>
     <message>
-        <location line="-506"/>
+        <location line="-515"/>
         <source>You were unmuted by %1.</source>
         <translation>%1 wyłączył twoje wyciszenie mikrofonu.</translation>
     </message>
@@ -6039,18 +6126,18 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>%2 wyłączył wyciszenie mikrofonu %1.</translation>
     </message>
     <message>
-        <location line="+409"/>
+        <location line="+418"/>
         <source>Unable to find matching CELT codecs with other clients. You will not be able to talk to all users.</source>
         <translation>Nie udało się odnaleźć pasujących kodeków CELT. Nie będziesz mógł rozmawiać do wszystkich użytkowników.</translation>
     </message>
     <message>
-        <location line="-475"/>
+        <location line="-484"/>
         <source>You were muted and deafened by %1.</source>
         <oldsource>You were deafened by %1.</oldsource>
         <translation>Zostałeś ogłuszony oraz wyciszony przez %1.</translation>
     </message>
     <message>
-        <location line="+171"/>
+        <location line="+176"/>
         <source>You were kicked from the server by %1: %2.</source>
         <translation>Zostałeś wykopany z serwera przez %1 z powodu: %2.</translation>
     </message>
@@ -6070,7 +6157,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>%3 został zbanowany oraz wykopany z serwera przez %1 z powodu: %2.</translation>
     </message>
     <message>
-        <location line="-74"/>
+        <location line="-79"/>
         <source>You were moved to %1 by %2.</source>
         <translation>Zostałeś przeniesiony do kanału %1 przez %2.</translation>
     </message>
@@ -6080,27 +6167,27 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>%1 dołączył do kanału.</translation>
     </message>
     <message>
-        <location line="-406"/>
+        <location line="-409"/>
         <source>Server connection rejected: %1.</source>
         <translation>Połączenie odrzucone: %1.</translation>
     </message>
     <message>
-        <location line="+156"/>
+        <location line="+158"/>
         <source>Denied: %1.</source>
         <translation>Zabroniono: %1.</translation>
     </message>
     <message>
-        <location line="+264"/>
+        <location line="+269"/>
         <source>%1 renamed to %2.</source>
-        <translation type="unfinished"/>
+        <translation>%1 zmienił nazwę na %2.</translation>
     </message>
     <message>
-        <location line="+45"/>
+        <location line="+46"/>
         <source>%1 left channel and disconnected.</source>
-        <translation type="unfinished"/>
+        <translation>%1 opuścił kanał i rozłączył się.</translation>
     </message>
     <message>
-        <location line="+123"/>
+        <location line="+127"/>
         <source>Message from %1</source>
         <translation>Wiadomość od %1</translation>
     </message>
@@ -6115,7 +6202,7 @@ W przeciwnym razie proszę przerwać i sprawdzić swój certyfikat oraz nazwę u
         <translation>Nieznany sposób przeciągania kanałów w UserModel::dropMimeData.</translation>
     </message>
     <message>
-        <location filename="main.cpp" line="-319"/>
+        <location filename="main.cpp" line="-349"/>
         <source>Usage: mumble [options] [&lt;url&gt;]
 
 &lt;url&gt; specifies a URL to connect to after startup instead of showing
@@ -6133,14 +6220,30 @@ Valid options are:
                 Suppress loading of identity files (i.e., certificates.)
 
 </source>
-        <translation type="unfinished"/>
+        <translation>Użycie: mumble [opcje] [&lt;url&gt;]
+
+&lt;url&gt; określa URL połączenia po starcie aplikacji, automatycznie łączy do serwera
+zamiast wyświetlać okno wyboru serwera, posiada następującą składnie:
+mumble://[&lt;nazwa_uzytkownika&gt;[:&lt;hasło&gt;]@]&lt;host&gt;[:&lt;port&gt;][/&lt;kanał&gt;[/&lt;pod-kanał&gt;...]][?version=&lt;x.y.z&gt;]
+
+Parametr z wersją Mumble musi zostać podany w celu uruchomienia poprawnej wersji klienta. Aktualnie domyślną wartością jest 1.2.0
+
+Dostępne opcje:
+  -h, --help
+                Wyświetla to okno pomocy i zamyka aplikację.
+  -m, --multiple
+                Pozwana na uruchomienie kilku instancji programu.
+  -n, --noidentity
+                Powstrzymuje ładowanie plików identyfikacyjnych (np. certyfikatów)
+</translation>
     </message>
     <message>
         <location line="+18"/>
         <source>Remote controlling Mumble:
 
 </source>
-        <translation type="unfinished"/>
+        <translation>Zdalne sterowanie Mumble:
+</translation>
     </message>
     <message>
         <location line="+4"/>
@@ -6160,7 +6263,20 @@ Valid actions are:
                 Undeafen self
 
 </source>
-        <translation type="unfinished"/>
+        <translation>Jak używać: mumble rpc &lt;action&gt; [options]
+
+Możliwe jest zdalne sterowanie uruchomionej kopii Mumble używając komendy &apos;mumble rpc&apos;.
+
+Akcje, które możesz wykonać:
+wyciszenie innych
+wyciszenie siebie
+wyłączenie wyciszenia innych
+wyłączenie wyciszenia siebie
+ogłuszenie siebie
+ogłuszenie innych
+wyłączenie ogłuszenia siebie
+wyłączenie ogłuszenia innych
+</translation>
     </message>
     <message>
         <location line="+24"/>
@@ -6170,15 +6286,15 @@ Valid actions are:
     <message>
         <location line="+16"/>
         <source>Error: No RPC command specified</source>
-        <translation type="unfinished"/>
+        <translation>Błąd: Nie podano polecenia RPC</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>RPC</source>
-        <translation type="unfinished"/>
+        <translation>RPC</translation>
     </message>
     <message>
-        <location line="+190"/>
+        <location line="+220"/>
         <source>Welcome to Mumble.</source>
         <translation>Witamy w Mumble.</translation>
     </message>
@@ -6396,12 +6512,27 @@ kanały mają być filtrowane.</translation>
     <message>
         <location/>
         <source>Reset &amp;Avatar</source>
-        <translation type="unfinished"/>
+        <translation>Resetuj &amp;awatar</translation>
     </message>
     <message>
         <location/>
         <source>Reset the avatar of the selected user.</source>
-        <translation type="unfinished"/>
+        <translation>Zresetuj awatar dla zaznaczonego użytkownika.</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Local Volume Adjustment</source>
+        <translation>Lokalne dopasowanie głośności</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Locally adjust the user&apos;s speech volume.</source>
+        <translation>Lokalne dostosowanie głośności mowy użytkownika.</translation>
+    </message>
+    <message>
+        <location/>
+        <source>Opens a dialog with a volume slider. Use this on other users in the same room.</source>
+        <translation>Otwiera okno z kontrolą głośności. Użyj tego na innych użytkownikach znajdujących się w tym samym pomieszczeniu.</translation>
     </message>
 </context>
 <context>
@@ -6779,7 +6910,7 @@ traktowany jako aktywny po wypowiedzi:</translation>
 <context>
     <name>OverlayConfig</name>
     <message>
-        <location filename="OverlayConfig.cpp" line="+90"/>
+        <location filename="OverlayConfig.cpp" line="+99"/>
         <source>To move the users, drag the little red dot.</source>
         <translation>Przeciągnij małą czerwoną kropkę, aby przenieść użytkowników.</translation>
     </message>
@@ -6796,12 +6927,12 @@ traktowany jako aktywny po wypowiedzi:</translation>
         <translation>Aby uzyskać więcej opcji kliknij prawym przyciskiem myszy na użytkowniku.</translation>
     </message>
     <message>
-        <location line="+262"/>
+        <location line="+266"/>
         <source>Overlay</source>
         <translation>Nakładka</translation>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+85"/>
         <source>Choose executable</source>
         <translation>Wybierz plik wykonywalny</translation>
     </message>
@@ -7378,7 +7509,7 @@ Aby uaktualnić pliki do najnowszych wersji, kliknij na przycisk poniżej.</tran
 <context>
     <name>PulseAudioSystem</name>
     <message>
-        <location filename="PulseAudio.cpp" line="+797"/>
+        <location filename="PulseAudio.cpp" line="+800"/>
         <source>Default Input</source>
         <translation>Domyślne wejście</translation>
     </message>
@@ -7391,20 +7522,20 @@ Aby uaktualnić pliki do najnowszych wersji, kliknij na przycisk poniżej.</tran
 <context>
     <name>QApplication</name>
     <message>
-        <location filename="main.cpp" line="+110"/>
+        <location filename="main.cpp" line="+120"/>
         <source>Failed to restart mumble</source>
-        <translation type="unfinished"/>
+        <translation>Nie udało się zrestartować Mumble</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Mumble failed to restart itself. Please restart it manually.</source>
-        <translation type="unfinished"/>
+        <translation>Nie udało się zrestartować Mumble. Proszę samemu zrestartować program.</translation>
     </message>
 </context>
 <context>
     <name>RichTextEditor</name>
     <message>
-        <location filename="RichTextEditor.cpp" line="+257"/>
+        <location filename="RichTextEditor.cpp" line="+258"/>
         <source>Failed to load image</source>
         <translation>Nie udało się załadować obrazka</translation>
     </message>
@@ -7581,7 +7712,7 @@ Aby uaktualnić pliki do najnowszych wersji, kliknij na przycisk poniżej.</tran
 <context>
     <name>ShortcutActionWidget</name>
     <message>
-        <location filename="GlobalShortcut.cpp" line="-576"/>
+        <location filename="GlobalShortcut.cpp" line="-602"/>
         <source>Unassigned</source>
         <translation>Nieprzypisana</translation>
     </message>
@@ -7820,7 +7951,7 @@ An access token is a text string, which can be used as a password for very simpl
     <message numerus="yes">
         <location filename="UserEdit.cpp" line="-68"/>
         <source>Registered users: %n account(s)</source>
-        <translation type="unfinished"><numerusform></numerusform><numerusform></numerusform><numerusform></numerusform></translation>
+        <translation><numerusform>Zarejestrowani użytkownicy: %n konto</numerusform><numerusform>Zarejestrowani użytkownicy: %n kont</numerusform><numerusform>Zarejestrowani użytkownicy: %n kont</numerusform></translation>
     </message>
 </context>
 <context>
@@ -7931,7 +8062,7 @@ An access token is a text string, which can be used as a password for very simpl
         <translation>Czas połączenia</translation>
     </message>
     <message>
-        <location filename="UserInformation.cpp" line="+106"/>
+        <location filename="UserInformation.cpp" line="+108"/>
         <source>%1w</source>
         <translation>%1w</translation>
     </message>
@@ -8047,6 +8178,34 @@ An access token is a text string, which can be used as a password for very simpl
         <location line="+2"/>
         <source>Channel id: %1</source>
         <translation>ID kanału: %1</translation>
+    </message>
+</context>
+<context>
+    <name>UserLocalVolumeDialog</name>
+    <message>
+        <location filename="UserLocalVolumeDialog.ui"/>
+        <source>Local volume for other users</source>
+        <translation>Lokalna głośność dla innych użytkowników</translation>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;b&gt;Adjust the volume of other users locally&lt;/b&gt;&lt;br /&gt;Mumble supports adjusting the volume of other users locally.</source>
+        <translation>&lt;b&gt;Dopasuj głośność innych użytkowników lokalnie&lt;/b&gt;&lt;br /&gt;Mumble wspiera lokalne ustawienie głośności innych użytkowników.</translation>
+    </message>
+    <message>
+        <location filename="UserLocalVolumeDialog.cpp" line="+46"/>
+        <source>Adjusting local volume for %1</source>
+        <translation>Dopasowywanie lokalnej głośności dla %1</translation>
+    </message>
+    <message>
+        <location filename="UserLocalVolumeDialog.ui"/>
+        <source> dB</source>
+        <translation>dB</translation>
+    </message>
+    <message>
+        <location/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the slider or the text box to change the volume of the user.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-weight:600;&quot;&gt;Attention!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Increasing the volume of a user too much can permanently damage your hearing. It may also increase the background noise of the user.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Użyj suwaka albo pola tekstowego do zmiany głośności użytkownika.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-weight:600;&quot;&gt;Uwaga!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Zbyt duże zwiększenie poziomu głośności może skutkować trwałą utratą słuchu. Może również zwiększyć szum u użytkownika.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
 <context>
@@ -8241,7 +8400,7 @@ An access token is a text string, which can be used as a password for very simpl
 <context>
     <name>ViewCert</name>
     <message>
-        <location filename="ViewCert.cpp" line="+50"/>
+        <location filename="ViewCert.cpp" line="+52"/>
         <source>Certificate Chain Details</source>
         <translation>Szczegóły łańcucha certyfikatu</translation>
     </message>

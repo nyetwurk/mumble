@@ -1,33 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2008-2015, Mikkel Krautz <mikkel@krautz.dk>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #define GLX_GLXEXT_LEGACY
 #define GL_GLEXT_PROTOTYPES
@@ -74,6 +48,8 @@ typedef unsigned char bool;
 # include <AGL/AGL.h>
 #
 # include <objc/objc-runtime.h>
+#
+# include "mach_override.h"
 #
 # include "avail_mac.h"
 #endif
@@ -267,7 +243,7 @@ static void regenTexture(Context *ctx) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ctx->uiWidth, ctx->uiHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, ctx->a_ucTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)ctx->uiWidth, (GLsizei)ctx->uiHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, ctx->a_ucTexture);
 }
 
 static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
@@ -294,7 +270,7 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 		om.omh.uiMagic = OVERLAY_MAGIC_NUMBER;
 		om.omh.uiType = OVERLAY_MSGTYPE_PID;
 		om.omh.iLength = sizeof(struct OverlayMsgPid);
-		om.omp.pid = getpid();
+		om.omp.pid = (unsigned int)getpid(); // getpid can't fail
 
 		if (!sendMessage(ctx, &om))
 			return;
@@ -345,7 +321,7 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 				disconnect(ctx);
 				return;
 			} else if (length != ctx->omMsg.omh.iLength) {
-				ods("Short overlay message read %x %ld/%d", ctx->omMsg.omh.uiType, length, ctx->omMsg.omh.iLength);
+				ods("Short overlay message read %x %zd/%d", ctx->omMsg.omh.uiType, length, ctx->omMsg.omh.iLength);
 				disconnect(ctx);
 				return;
 			}
@@ -363,10 +339,11 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 							struct stat buf;
 							
 							if (fstat(fd, &buf) != -1) {
-								if (buf.st_size >= ctx->uiWidth * ctx->uiHeight * 4
-								        && buf.st_size < 512 * 1024 * 1024) {
-									ctx->uiMappedLength = (unsigned int)buf.st_size;
-									ctx->a_ucTexture = mmap(NULL, (size_t)buf.st_size, PROT_READ, MAP_SHARED, fd, 0);
+								unsigned int buflen = buf.st_size;
+								if (buflen >= ctx->uiWidth * ctx->uiHeight * 4
+								        && buflen < 512 * 1024 * 1024) {
+									ctx->uiMappedLength = buflen;
+									ctx->a_ucTexture = mmap(NULL, (size_t)buflen, PROT_READ, MAP_SHARED, fd, 0);
 									if (ctx->a_ucTexture != MAP_FAILED) {
 										// mmap successfull; send a new bodyless sharedmemory overlay message and regenerate the overlay texture
 										struct OverlayMsg om;
@@ -400,7 +377,7 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 
 							if ((omb->x == 0) && (omb->y == 0) && (omb->w == ctx->uiWidth) && (omb->h == ctx->uiHeight)) {
 								ods("Optimzied fullscreen blit");
-								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ctx->uiWidth, ctx->uiHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, ctx->a_ucTexture);
+								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)ctx->uiWidth, (GLsizei)ctx->uiHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, ctx->a_ucTexture);
 							} else {
 								// allocate temporary memory
 								unsigned int x = omb->x;
@@ -419,7 +396,7 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 								}
 
 								// copy temporary texture to opengl
-								glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
+								glTexSubImage2D(GL_TEXTURE_2D, 0, (GLint)x, (GLint)y, (GLint)w, (GLint)h, GL_BGRA, GL_UNSIGNED_BYTE, ptr);
 								free(ptr);
 							}
 						}
@@ -491,15 +468,29 @@ static void drawOverlay(Context *ctx, unsigned int width, unsigned int height) {
 	float xmx = right  / w;
 	float ymx = bottom / h;
 
+	GLfloat vertex[] = {
+		left, bottom,
+		left, top,
+		right, top,
 
-	GLfloat vertex[] = {left, bottom,
-	        left, top,
-	        right, top,
-	        right, bottom};
-	GLfloat tex[] = {xm, ymx, xm, ym, xmx, ym, xmx, ymx};
+		left, bottom,
+		right, top,
+		right, bottom
+	};
 	glVertexPointer(2, GL_FLOAT, 0, vertex);
+
+	GLfloat tex[] = {
+		xm, ymx,
+		xm, ym,
+		xmx, ym,
+
+		xm, ymx,
+		xmx, ym,
+		xmx, ymx
+	};
 	glTexCoordPointer(2, GL_FLOAT, 0, tex);
-	glDrawArrays(GL_QUADS, 0, 4);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glPopMatrix();
 }
@@ -545,6 +536,8 @@ static void drawContext(Context * ctx, int width, int height) {
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
 	glLoadIdentity();
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_AUTO_NORMAL);
@@ -604,7 +597,7 @@ static void drawContext(Context * ctx, int width, int height) {
 	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &texunits);
 
 	for (i=texunits-1;i>=0;--i) {
-		glActiveTexture(GL_TEXTURE0 + i);
+		glActiveTexture(GL_TEXTURE0 + (GLenum)i);
 		glDisable(GL_TEXTURE_1D);
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_TEXTURE_3D);
@@ -652,7 +645,7 @@ static void drawContext(Context * ctx, int width, int height) {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	drawOverlay(ctx, width, height);
+	drawOverlay(ctx, (unsigned int)width, (unsigned int)height);
 
 	if (bound != 0) {
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, bound);

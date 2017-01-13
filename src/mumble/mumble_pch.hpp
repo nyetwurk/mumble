@@ -1,3 +1,8 @@
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
+
 #ifndef Q_MOC_RUN
 #ifndef MUMBLE_MUMBLE_MUMBLE_PCH_H_
 #define MUMBLE_MUMBLE_MUMBLE_PCH_H_
@@ -39,9 +44,7 @@
 #ifdef Q_OS_WIN
 #define ENABLE_SNDFILE_WINDOWS_PROTOTYPES 1
 #endif
-#define __int64_t __int64
 #include <sndfile.h>
-#undef __int64_t
 #include <celt.h>
 #ifdef USE_SBCELT
 #include <sbcelt.h>
@@ -101,10 +104,14 @@
 #define ZeroMemory(ptr,len) memset(ptr, 0, len)
 #define __cdecl
 typedef WId HWND;
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif
 
-#if defined(__MMX__) || defined(Q_OS_WIN)
+#if !defined(Q_OS_OPENBSD) && (defined(__MMX__) || defined(Q_OS_WIN))
 #include <mmintrin.h>
 #endif
 

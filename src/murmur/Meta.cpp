@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "murmur_pch.h"
 
@@ -39,6 +14,10 @@
 #include "OSInfo.h"
 #include "Version.h"
 #include "SSL.h"
+
+#if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
+# include <QSslDiffieHellmanParameters>
+#endif
 
 MetaParams Meta::mp;
 
@@ -181,6 +160,7 @@ void MetaParams::read(QString fname) {
 			qFatal("Specified ini file %s could not be opened", qPrintable(fname));
 		}
 		qdBasePath = QFileInfo(f).absoluteDir();
+		fname = QFileInfo(f).absoluteFilePath();
 		f.close();
 	}
 	QDir::setCurrent(qdBasePath.absolutePath());
@@ -305,6 +285,10 @@ void MetaParams::read(QString fname) {
 	qsIceSecretRead = typeCheckedFromSettings("icesecretread", qsIceSecretRead);
 	qsIceSecretWrite = typeCheckedFromSettings("icesecretwrite", qsIceSecretRead);
 
+	qsGRPCAddress = typeCheckedFromSettings("grpc", qsGRPCAddress);
+	qsGRPCCert = typeCheckedFromSettings("grpccert", qsGRPCCert);
+	qsGRPCKey = typeCheckedFromSettings("grpckey", qsGRPCKey);
+
 	iLogDays = typeCheckedFromSettings("logdays", iLogDays);
 
 	qsDBus = typeCheckedFromSettings("dbus", qsDBus);
@@ -377,6 +361,7 @@ void MetaParams::read(QString fname) {
 	QString qsSSLCert = qsSettings->value("sslCert").toString();
 	QString qsSSLKey = qsSettings->value("sslKey").toString();
 	QString qsSSLCA = qsSettings->value("sslCA").toString();
+	QString qsSSLDHParams = qsSettings->value("sslDHParams").toString();
 
 	qbaPassPhrase = qsSettings->value("sslPassPhrase").toByteArray();
 
@@ -396,7 +381,7 @@ void MetaParams::read(QString fname) {
 		}
 	}
 
-	QByteArray crt, key;
+	QByteArray crt, key, dhparams;
 
 	if (! qsSSLCert.isEmpty()) {
 		QFile pem(qsSSLCert);
@@ -452,6 +437,31 @@ void MetaParams::read(QString fname) {
 		}
 	}
 
+#if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
+	if (! qsSSLDHParams.isEmpty()) {
+		QFile pem(qsSSLDHParams);
+		if (pem.open(QIODevice::ReadOnly)) {
+			dhparams = pem.readAll();
+			pem.close();
+		} else {
+			qCritical("Failed to read %s", qPrintable(qsSSLDHParams));
+		}
+	}
+
+	if (! dhparams.isEmpty()) {
+		QSslDiffieHellmanParameters qdhp = QSslDiffieHellmanParameters(dhparams);
+		if (qdhp.isValid()) {
+			qbaDHParams = dhparams;
+		} else {
+			qFatal("Unable to use specified Diffie-Hellman parameters: %s", qPrintable(qdhp.errorString()));
+		}
+	}
+#else
+	if (! qsSSLDHParams.isEmpty()) {
+		qFatal("This version of Murmur does not support Diffie-Hellman parameters (sslDHParams). Murmur will not start unless you remove the option from your murmur.ini file.");
+	}
+#endif
+
 	if (! QSslSocket::supportsSsl()) {
 		qFatal("Qt without SSL Support");
 	}
@@ -462,10 +472,31 @@ void MetaParams::read(QString fname) {
 			qFatal("Invalid sslCiphers option. Either the cipher string is invalid or none of the ciphers are available: \"%s\"", qPrintable(qsCiphers));
 		}
 
-		QSslSocket::setDefaultCiphers(ciphers);
+		// If the version of Qt we're building against doesn't support
+		// QSslDiffieHellmanParameters, then we must filter out Diffie-
+		// Hellman cipher suites in order to guarantee that we do not
+		// use Qt's default Diffie-Hellman parameters.
+		QList<QSslCipher> filtered;
+#if !defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
+		foreach (QSslCipher c, ciphers) {
+			if (c.keyExchangeMethod() == QLatin1String("DH")) {
+				continue;
+			}
+			filtered << c;
+		}
+		if (ciphers.size() != filtered.size()) {
+			qWarning("Warning: all cipher suites in sslCiphers using Diffie-Hellman key exchange "
+			         "have been removed. Qt %s does not support custom Diffie-Hellman parameters.",
+				 qVersion());
+		}
+#else
+		filtered = ciphers;
+#endif
+
+		QSslSocket::setDefaultCiphers(filtered);
 
 		QStringList pref;
-		foreach (QSslCipher c, ciphers) {
+		foreach (QSslCipher c, filtered) {
 			pref << c.name();
 		}
 		qWarning("Meta: TLS cipher preference is \"%s\"", qPrintable(pref.join(QLatin1String(":"))));
@@ -510,6 +541,7 @@ void MetaParams::read(QString fname) {
 	qmConfig.insert(QLatin1String("opusthreshold"), QString::number(iOpusThreshold));
 	qmConfig.insert(QLatin1String("channelnestinglimit"), QString::number(iChannelNestingLimit));
 	qmConfig.insert(QLatin1String("sslCiphers"), qsCiphers);
+	qmConfig.insert(QLatin1String("sslDHParams"), QString::fromLatin1(qbaDHParams.constData()));
 }
 
 Meta::Meta() {
@@ -589,7 +621,7 @@ bool Meta::boot(int srvnum) {
 			}
 		}
 		if (r.rlim_cur < sockets)
-			qCritical("Current booted servers require minimum %d file descriptors when all slots are full, but only %ld file descriptors are allowed for this process. Your server will crash and burn; read the FAQ for details.", sockets, r.rlim_cur);
+			qCritical("Current booted servers require minimum %d file descriptors when all slots are full, but only %lu file descriptors are allowed for this process. Your server will crash and burn; read the FAQ for details.", sockets, static_cast<unsigned long>(r.rlim_cur));
 	}
 #endif
 
@@ -614,9 +646,6 @@ void Meta::killAll() {
 
 bool Meta::banCheck(const QHostAddress &addr) {
 	if ((mp.iBanTries == 0) || (mp.iBanTimeframe == 0))
-		return false;
-
-	if (addr.toIPv4Address() == ((128U << 24) | (39U << 16) | (114U << 8) | 1U))
 		return false;
 
 	if (qhBans.contains(addr)) {

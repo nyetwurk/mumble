@@ -1,32 +1,7 @@
-/* Copyright (C) 2013, Stefan Hacker <dd0t@users.sourceforge.net>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-	 this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-	 this list of conditions and the following disclaimer in the documentation
-	 and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-	 contributors may be used to endorse or promote products derived from this
-	 software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -37,8 +12,8 @@
 #include <vector>
 #include <algorithm>
 
-UserListModel::UserListModel(const MumbleProto::UserList& userList, QObject *parent)
-	: QAbstractTableModel(parent)
+UserListModel::UserListModel(const MumbleProto::UserList& userList, QObject *parent_)
+	: QAbstractTableModel(parent_)
 	, m_legacyMode(false) {
 
 	m_userList.reserve(userList.users_size());
@@ -52,15 +27,15 @@ UserListModel::UserListModel(const MumbleProto::UserList& userList, QObject *par
 	}
 }
 
-int UserListModel::rowCount(const QModelIndex &parent) const {
-	if (parent.isValid())
+int UserListModel::rowCount(const QModelIndex &parentIndex) const {
+	if (parentIndex.isValid())
 		return 0;
 
 	return m_userList.size();
 }
 
-int UserListModel::columnCount(const QModelIndex &parent) const {
-	if (parent.isValid())
+int UserListModel::columnCount(const QModelIndex &parentIndex) const {
+	if (parentIndex.isValid())
 		return 0;
 
 	if (m_legacyMode) {
@@ -90,27 +65,27 @@ QVariant UserListModel::headerData(int section, Qt::Orientation orientation, int
 	return QVariant();
 }
 
-QVariant UserListModel::data(const QModelIndex &index, int role) const {
-	if (!index.isValid())
+QVariant UserListModel::data(const QModelIndex &dataIndex, int role) const {
+	if (!dataIndex.isValid())
 		return QVariant();
 	
-	if (index.row() < 0 || index.row() >= m_userList.size())
+	if (dataIndex.row() < 0 || dataIndex.row() >= m_userList.size())
 		return QVariant();
 	
-	if (index.column() >= columnCount())
+	if (dataIndex.column() >= columnCount())
 		return QVariant();
 
-	const MumbleProto::UserList_User& user = m_userList[index.row()];
+	const MumbleProto::UserList_User& user = m_userList[dataIndex.row()];
 
 	if (role == Qt::DisplayRole) {
-		switch (index.column()) {
+		switch (dataIndex.column()) {
 			case COL_NICK:         return u8(user.name());
 			case COL_INACTIVEDAYS: return lastSeenToTodayDayCount(user.last_seen());
 			case COL_LASTCHANNEL:  return pathForChannelId(user.last_channel());
 			default:               return QVariant();
 		}
 	} else if (role == Qt::ToolTipRole) {
-		switch (index.column()) {
+		switch (dataIndex.column()) {
 			case COL_INACTIVEDAYS: return tr("Last seen: %1").arg(user.last_seen().empty() ?
 				                                                      tr("Never")
 				                                                    : Qt::escape(u8(user.last_seen())));
@@ -118,13 +93,13 @@ QVariant UserListModel::data(const QModelIndex &index, int role) const {
 			default:               return QVariant();
 		}
 	} else if (role == Qt::UserRole) {
-		switch (index.column()) {
+		switch (dataIndex.column()) {
 			case COL_INACTIVEDAYS: return isoUTCToDateTime(user.last_seen());
 			case COL_LASTCHANNEL:  return user.last_channel();
 			default:               return QVariant();
 		}
 	} else if (role == Qt::EditRole) {
-		if (index.column() == COL_NICK) {
+		if (dataIndex.column() == COL_NICK) {
 			return u8(user.name());
 		}
 	}
@@ -132,14 +107,14 @@ QVariant UserListModel::data(const QModelIndex &index, int role) const {
 	return QVariant();
 }
 
-bool UserListModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-	if (!index.isValid())
+bool UserListModel::setData(const QModelIndex &dataIndex, const QVariant &value, int role) {
+	if (!dataIndex.isValid())
 		return false;
 	
-	if (index.column() != COL_NICK || role != Qt::EditRole)
+	if (dataIndex.column() != COL_NICK || role != Qt::EditRole)
 		return false;
 	
-	if (index.row() < 0 || index.row() >= m_userList.size())
+	if (dataIndex.row() < 0 || dataIndex.row() >= m_userList.size())
 		return false;
 
 	const std::string newNick = u8(value.toString());
@@ -148,7 +123,7 @@ bool UserListModel::setData(const QModelIndex &index, const QVariant &value, int
 		return false;
 	}
 
-	MumbleProto::UserList_User& user = m_userList[index.row()];
+	MumbleProto::UserList_User& user = m_userList[dataIndex.row()];
 	if (newNick != user.name()) {
 		foreach (const MumbleProto::UserList_User& otherUser, m_userList) {
 			if (otherUser.name() == newNick) {
@@ -160,27 +135,27 @@ bool UserListModel::setData(const QModelIndex &index, const QVariant &value, int
 		user.set_name(newNick);
 		m_changes[user.user_id()] = user;
 
-		emit dataChanged(index, index);
+		emit dataChanged(dataIndex, dataIndex);
 	}
 
 	return true;
 }
 
-Qt::ItemFlags UserListModel::flags(const QModelIndex &index) const {
-	const Qt::ItemFlags original = QAbstractTableModel::flags(index);
+Qt::ItemFlags UserListModel::flags(const QModelIndex &flagIndex) const {
+	const Qt::ItemFlags original = QAbstractTableModel::flags(flagIndex);
 
-	if (index.column() == COL_NICK) {
+	if (flagIndex.column() == COL_NICK) {
 		return original | Qt::ItemIsEditable;
 	}
 
 	return original;
 }
 
-bool UserListModel::removeRows(int row, int count, const QModelIndex &parent) {
+bool UserListModel::removeRows(int row, int count, const QModelIndex &parentIndex) {
 	if (row + count > m_userList.size())
 		return false;
 
-	beginRemoveRows(parent, row, row + count - 1);
+	beginRemoveRows(parentIndex, row, row + count - 1);
 
 	ModelUserList::Iterator startIt = m_userList.begin() + row;
 	ModelUserList::Iterator endIt = startIt + count;

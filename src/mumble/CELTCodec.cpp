@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "mumble_pch.hpp"
 
@@ -48,37 +23,37 @@ extern "C" {
 };
 #endif
 
-CELTCodec::CELTCodec(const QString &version) {
+CELTCodec::CELTCodec(const QString &celt_version) {
 	bValid = false;
 	cmMode = NULL;
-	qsVersion = version;
+	qsVersion = celt_version;
 	iBitstreamVersion = INT_MIN;
 	qlCELT.setLoadHints(QLibrary::ResolveAllSymbolsHint);
 
 	QStringList alternatives;
 #if defined(Q_OS_MAC)
-	alternatives << QString::fromLatin1("libcelt0.%1.dylib").arg(version);
-	alternatives << QString::fromLatin1("celt0.%1.dylib").arg(version);
-	alternatives << QString::fromLatin1("libcelt.%1.dylib").arg(version);
-	alternatives << QString::fromLatin1("celt.%1.dylib").arg(version);
+	alternatives << QString::fromLatin1("libcelt0.%1.dylib").arg(celt_version);
+	alternatives << QString::fromLatin1("celt0.%1.dylib").arg(celt_version);
+	alternatives << QString::fromLatin1("libcelt.%1.dylib").arg(celt_version);
+	alternatives << QString::fromLatin1("celt.%1.dylib").arg(celt_version);
 #elif defined(Q_OS_UNIX)
-	alternatives << QString::fromLatin1("libcelt0.so.%1").arg(version);
-	alternatives << QString::fromLatin1("libcelt.so.%1").arg(version);
-	alternatives << QString::fromLatin1("celt.so.%1").arg(version);
+	alternatives << QString::fromLatin1("libcelt0.so.%1").arg(celt_version);
+	alternatives << QString::fromLatin1("libcelt.so.%1").arg(celt_version);
+	alternatives << QString::fromLatin1("celt.so.%1").arg(celt_version);
 #else
 	int cpuinfo[4];
 	__cpuid(cpuinfo, 1);
 	if (cpuinfo[3] & 0x02000000) {
 		if (cpuinfo[3] & 0x04000000) {
 			if (cpuinfo[2] & 0x00000001) {
-				alternatives << QString::fromLatin1("celt0.%1.sse3.dll").arg(version);
+				alternatives << QString::fromLatin1("celt0.%1.sse3.dll").arg(celt_version);
 			}
-			alternatives << QString::fromLatin1("celt0.%1.sse2.dll").arg(version);
+			alternatives << QString::fromLatin1("celt0.%1.sse2.dll").arg(celt_version);
 		}
-		alternatives << QString::fromLatin1("celt0.%1.sse.dll").arg(version);
+		alternatives << QString::fromLatin1("celt0.%1.sse.dll").arg(celt_version);
 	}
 
-	alternatives << QString::fromLatin1("celt0.%1.dll").arg(version);
+	alternatives << QString::fromLatin1("celt0.%1.dll").arg(celt_version);
 #endif
 	foreach(const QString &lib, alternatives) {
 		qlCELT.setFileName(MumbleApplication::instance()->applicationVersionRootPath() + QLatin1String("/") + lib);
@@ -144,7 +119,7 @@ void CELTCodec::report() const {
 	qWarning("CELT bitstream %08x from %s", bitstreamVersion(), qPrintable(qlCELT.fileName()));
 }
 
-CELTCodec070::CELTCodec070(const QString &version) : CELTCodec(version) {
+CELTCodec070::CELTCodec070(const QString &celt_version) : CELTCodec(celt_version) {
 	RESOLVE(celt_mode_create);
 	RESOLVE(celt_encoder_create);
 	RESOLVE(celt_decoder_create);
@@ -175,7 +150,7 @@ int CELTCodec070::decode_float(CELTDecoder *st, const unsigned char *data, int l
 	return celt_decode_float(st, data, len, pcm);
 }
 
-CELTCodec011::CELTCodec011(const QString &version) : CELTCodec(version) {
+CELTCodec011::CELTCodec011(const QString &celt_version) : CELTCodec(celt_version) {
 	RESOLVE(celt_mode_create);
 	RESOLVE(celt_encoder_create_custom);
 	RESOLVE(celt_decoder_create_custom);

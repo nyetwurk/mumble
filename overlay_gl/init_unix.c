@@ -1,33 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-   Copyright (C) 2008-2015, Mikkel Krautz <mikkel@krautz.dk>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 // This file is included by overlay.c for
 // Unix/X11/GLX-specific overlay initialization.
@@ -102,15 +76,15 @@ void glXSwapBuffers(Display * dpy, GLXDrawable draw) {
 	}
 
 	if (c->bValid) {
-		GLuint width, height;
+		int width, height;
 		if (c->bMesa) {
 			GLint viewport[4];
 			glGetIntegerv(GL_VIEWPORT, viewport);
 			width = viewport[2];
 			height = viewport[3];
 		} else {
-			glXQueryDrawable(dpy, draw, GLX_WIDTH, (unsigned int *) &width);
-			glXQueryDrawable(dpy, draw, GLX_HEIGHT, (unsigned int *) &height);
+			glXQueryDrawable(dpy, draw, GLX_WIDTH, (GLuint*)&width);
+			glXQueryDrawable(dpy, draw, GLX_HEIGHT, (GLuint*)&height);
 		}
 
 		drawContext(c, width, height);
@@ -167,25 +141,13 @@ void *dlsym(void *handle, const char *name) {
 	return symbol;
 }
 
-__attribute__((constructor))
-static void initializeLibrary() {
-	if (odlsym)
-		return;
-
-	if (getenv("MUMBLE_OVERLAY_DEBUG")) {
-		bDebug = true;
-	} else {
-		bDebug = false;
-	}
-
-	bCursorAvail = false;
-
-	ods("Mumble overlay library loaded");
+static int find_odlsym() {
+#if defined(__linux__)
 	void *dl = dlopen("libdl.so.2", RTLD_LAZY);
 	if (!dl) {
 		ods("Failed to open libdl.so.2");
 	} else {
-		int i;
+		int i = 0;
 		struct link_map *lm = (struct link_map *) dl;
 		int nchains = 0;
 		ElfW(Sym) *symtab = NULL;
@@ -208,13 +170,95 @@ static void initializeLibrary() {
 			dyn ++;
 		}
 		ods("Iterating dlsym table %p %p %d", symtab, strtab, nchains);
-		for (i=0;i<nchains;++i) {
+		for (i = 0; i < nchains; i++) {
 			// ELF32_ST_TYPE and ELF64_ST_TYPE are the same
-			if (ELF32_ST_TYPE(symtab[i].st_info) != STT_FUNC)
+			if (ELF32_ST_TYPE(symtab[i].st_info) != STT_FUNC) {
 				continue;
-			if (strcmp(strtab+symtab[i].st_name, "dlsym") == 0)
+			}
+			if (strcmp(strtab+symtab[i].st_name, "dlsym") == 0) {
 				odlsym = (void*)lm->l_addr + symtab[i].st_value;
+			}
+		}
+		if (odlsym == NULL) {
+			goto err;
 		}
 		ods("Original dlsym at %p", odlsym);
+	}
+
+	return 0;
+#elif defined(__FreeBSD__)
+	int i = 0;
+	struct link_map *lm = NULL;
+	int nchains = 0;
+	Elf_Sym * symtab = NULL;
+	const char *strtab = NULL;
+
+	if (dlinfo(RTLD_SELF, RTLD_DI_LINKMAP, &lm) == -1) {
+		ods("Unable to acquire link_map: %s", dlerror());
+		goto err;
+	}
+
+	while (lm != NULL) {
+		if (!strcmp(lm->l_name, "/libexec/ld-elf.so.1")) {
+			break;
+		}
+		lm = lm->l_next;
+	}
+	if (lm == NULL) {
+		goto err;
+	}
+
+	Elf_Dyn *dyn = (Elf_Dyn *) lm->l_ld;
+
+	while (dyn->d_tag) {
+		switch (dyn->d_tag) {
+			case DT_HASH:
+				nchains = *(int *)((uintptr_t)lm->l_addr + (uintptr_t)dyn->d_un.d_ptr + 4);
+				break;
+			case DT_STRTAB:
+				strtab = (const char *)((uintptr_t)lm->l_addr + (uintptr_t)dyn->d_un.d_ptr);
+				break;
+			case DT_SYMTAB:
+				symtab = (Elf_Sym *)((uintptr_t)lm->l_addr + (uintptr_t)dyn->d_un.d_ptr);
+				break;
+		}
+		dyn++;
+	}
+	ods("Iterating dsym table %p %p %d", symtab, strtab, nchains);
+	for (i = 0; i < nchains; i++) {
+		if (ELF_ST_TYPE(symtab[i].st_info) != STT_FUNC) {
+			continue;
+		}
+		if (strcmp(strtab + symtab[i].st_name, "dlsym") == 0) {
+			odlsym = (void *) lm->l_addr + symtab[i].st_value;
+		}
+	}
+	if (odlsym == NULL) {
+		goto err;
+	}
+	ods("Original dlsym at %p", odlsym);
+
+	return 0;
+#endif
+err:
+	return -1;
+}
+
+__attribute__((constructor))
+static void initializeLibrary() {
+	if (odlsym)
+		return;
+
+	if (getenv("MUMBLE_OVERLAY_DEBUG")) {
+		bDebug = true;
+	} else {
+		bDebug = false;
+	}
+
+	bCursorAvail = false;
+
+	ods("Mumble overlay library loaded");
+	if (find_odlsym() == -1) {
+		ods("Failed to find original address of dlsym().");
 	}
 }

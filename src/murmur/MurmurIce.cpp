@@ -1,32 +1,7 @@
-/* Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>
-
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-   - Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
-   - Redistributions in binary form must reproduce the above copyright notice,
-     this list of conditions and the following disclaimer in the documentation
-     and/or other materials provided with the distribution.
-   - Neither the name of the Mumble Developers nor the names of its
-     contributors may be used to endorse or promote products derived from this
-     software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright 2005-2017 The Mumble Developers. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// that can be found in the LICENSE file at the root of the
+// Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 #include "murmur_pch.h"
 
@@ -97,7 +72,7 @@ static void userToUser(const ::User *p, Murmur::User &mp) {
 	mp.udpPing = u->dUDPPingAvg;
 	mp.tcpPing = u->dTCPPingAvg;
 
-	mp.tcponly = ! u->bUdp;
+	mp.tcponly = QAtomicIntLoad(u->aiUdpFlag) == 0;
 
 	::Murmur::NetAddress addr(16, 0);
 	const Q_IPV6ADDR &a = u->haAddress.qip6;
@@ -914,7 +889,10 @@ static void impl_Server_id(const ::Murmur::AMD_Server_idPtr cb, int server_id) {
 #define ACCESS_Server_getConf_READ
 static void impl_Server_getConf(const ::Murmur::AMD_Server_getConfPtr cb, int server_id,  const ::std::string& key) {
 	NEED_SERVER_EXISTS;
-	cb->ice_response(u8(ServerDB::getConf(server_id, u8(key)).toString()));
+	if (key == "key" || key == "passphrase")
+		cb->ice_exception(WriteOnlyException());
+	else
+		cb->ice_response(u8(ServerDB::getConf(server_id, u8(key)).toString()));
 }
 
 #define ACCESS_Server_getAllConf_READ
@@ -926,6 +904,8 @@ static void impl_Server_getAllConf(const ::Murmur::AMD_Server_getAllConfPtr cb, 
 	QMap<QString, QString> values = ServerDB::getAllConf(server_id);
 	QMap<QString, QString>::const_iterator i;
 	for (i=values.constBegin();i != values.constEnd(); ++i) {
+		if (i.key() == "key" || i.key() == "passphrase")
+			continue;
 		cm[u8(i.key())] = u8(i.value());
 	}
 	cb->ice_response(cm);
@@ -1554,6 +1534,72 @@ static void impl_Server_getUptime(const ::Murmur::AMD_Server_getUptimePtr cb, in
 	cb->ice_response(static_cast<int>(server->tUptime.elapsed()/1000000LL));
 }
 
+static void impl_Server_updateCertificate(const ::Murmur::AMD_Server_updateCertificatePtr cb, int server_id, const ::std::string& certificate, const ::std::string& privateKey, const ::std::string& passphrase) {
+	NEED_SERVER;
+
+	QByteArray certPem(certificate.c_str());
+	QByteArray privateKeyPem(privateKey.c_str());
+	QByteArray passphraseBytes(passphrase.c_str());
+
+	// Verify that we can load the certificate.
+	QSslCertificate cert(certPem);
+	if (cert.isNull()) {
+		ERR_clear_error();
+		cb->ice_exception(InvalidInputDataException());
+		return;
+	}
+
+	// Verify that we can load the private key.
+	QSslKey privKey(privateKeyPem, QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey, passphraseBytes);
+	if (privKey.isNull()) {
+		ERR_clear_error();
+		cb->ice_exception(InvalidInputDataException());
+		return;
+	}
+
+	// Ensure that the private key is usable with the given
+	// certificate.
+	//
+	// Right now, we only support RSA keys in Murmur.
+	//
+	// To determine if the private key matches the certificate,
+	// we acquire the public key from the certificate and check
+	// that the modulus (n) and the public exponent (e) match
+	// those of the private key.
+	QSslKey pubKey = cert.publicKey();
+
+	if (privKey.algorithm() != QSsl::Rsa || pubKey.algorithm() != QSsl::Rsa) {
+		ERR_clear_error();
+		cb->ice_exception(InvalidInputDataException());
+		return;
+	}
+
+	RSA *privRSA = reinterpret_cast<RSA *>(privKey.handle());
+	RSA *pubRSA = reinterpret_cast<RSA *>(pubKey.handle());
+
+	if (BN_cmp(pubRSA->n, privRSA->n) != 0) {
+		ERR_clear_error();
+		cb->ice_exception(InvalidInputDataException());
+		return;
+	}
+
+	if (BN_cmp(pubRSA->e, privRSA->e) != 0) {
+		ERR_clear_error();
+		cb->ice_exception(InvalidInputDataException());
+		return;
+	}
+
+	// All our sanity checks passed.
+	// The certificate and private key are usable, so
+	// update the server to use them.
+	server->setConf("certificate", u8(certificate));
+	server->setConf("key", u8(privateKey));
+	server->setConf("passphrase", u8(passphrase));
+	server->initializeCert();
+
+	cb->ice_response();
+}
+
 static void impl_Server_addUserToGroup(const ::Murmur::AMD_Server_addUserToGroupPtr cb, int server_id, ::Ice::Int channelid,  ::Ice::Int session,  const ::std::string& group) {
 	NEED_SERVER;
 	NEED_PLAYER;
@@ -1565,11 +1611,16 @@ static void impl_Server_addUserToGroup(const ::Murmur::AMD_Server_addUserToGroup
 		return;
 	}
 
-	::Group *g = channel->qhGroups.value(qsgroup);
-	if (! g)
-		g = new ::Group(channel, qsgroup);
+	{
+		QWriteLocker wl(&server->qrwlVoiceThread);
 
-	g->qsTemporary.insert(- session);
+		::Group *g = channel->qhGroups.value(qsgroup);
+		if (! g)
+			g = new ::Group(channel, qsgroup);
+
+		g->qsTemporary.insert(- session);
+	}
+
 	server->clearACLCache(user);
 
 	cb->ice_response();
@@ -1586,11 +1637,16 @@ static void impl_Server_removeUserFromGroup(const ::Murmur::AMD_Server_removeUse
 		return;
 	}
 
-	::Group *g = channel->qhGroups.value(qsgroup);
-	if (! g)
-		g = new ::Group(channel, qsgroup);
+	{
+		QWriteLocker qrwl(&server->qrwlVoiceThread);
 
-	g->qsTemporary.remove(- session);
+		::Group *g = channel->qhGroups.value(qsgroup);
+		if (!g)
+			g = new ::Group(channel, qsgroup);
+
+		g->qsTemporary.remove(-session);
+	}
+
 	server->clearACLCache(user);
 
 	cb->ice_response();
@@ -1602,10 +1658,15 @@ static void impl_Server_redirectWhisperGroup(const ::Murmur::AMD_Server_redirect
 
 	QString qssource = u8(source);
 	QString qstarget = u8(target);
-	if (qstarget.isEmpty())
-		user->qmWhisperRedirect.remove(qssource);
-	else
-		user->qmWhisperRedirect.insert(qssource, qstarget);
+
+	{
+		QWriteLocker wl(&server->qrwlVoiceThread);
+
+		if (qstarget.isEmpty())
+			user->qmWhisperRedirect.remove(qssource);
+		else
+			user->qmWhisperRedirect.insert(qssource, qstarget);
+	}
 
 	server->clearACLCache(user);
 
@@ -1644,6 +1705,8 @@ static void impl_Meta_getDefaultConf(const ::Murmur::AMD_Meta_getDefaultConfPtr 
 	::Murmur::ConfigMap cm;
 	QMap<QString, QString>::const_iterator i;
 	for (i=meta->mp.qmConfig.constBegin();i != meta->mp.qmConfig.constEnd(); ++i) {
+		if (i.key() == "key" || i.key() == "passphrase")
+			continue;
 		cm[u8(i.key())] = u8(i.value());
 	}
 	cb->ice_response(cm);
