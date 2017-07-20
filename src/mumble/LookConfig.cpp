@@ -59,6 +59,8 @@ LookConfig::LookConfig(Settings &st) : ConfigWidget(st) {
 	qcbUserDrag->insertItem(Settings::Ask, tr("Ask"), Settings::Ask);
 	qcbUserDrag->insertItem(Settings::DoNothing, tr("Do Nothing"), Settings::DoNothing);
 	qcbUserDrag->insertItem(Settings::Move, tr("Move"), Settings::Move);
+
+	connect(qrbLCustom,SIGNAL(toggled(bool)),qcbLockLayout,SLOT(setEnabled(bool)));
 	
 	QDir userThemeDirectory = Themes::getUserThemesDirectory();
 	if (userThemeDirectory.exists()) {
@@ -141,6 +143,7 @@ void LookConfig::load(const Settings &r) {
 			qrbLCustom->setChecked(true);
 			break;
 	}
+	qcbLockLayout->setEnabled(r.wlWindowLayout==Settings::LayoutCustom);
 
 
 	for (int i=0;i<qcbLanguage->count();i++) {
@@ -157,6 +160,8 @@ void LookConfig::load(const Settings &r) {
 	loadComboBox(qcbUserDrag, r.ceUserDrag);
 	loadCheckBox(qcbUsersTop, r.bUserTop);
 	loadCheckBox(qcbAskOnQuit, r.bAskOnQuit);
+	loadCheckBox(qcbEnableDeveloperMenu, r.bEnableDeveloperMenu);
+	loadCheckBox(qcbLockLayout, (r.wlWindowLayout==Settings::LayoutCustom)&&r.bLockLayout);
 	loadCheckBox(qcbHideTray, r.bHideInTray);
 	loadCheckBox(qcbStateInTray, r.bStateInTray);
 	loadCheckBox(qcbShowUserCount, r.bShowUserCount);
@@ -203,6 +208,8 @@ void LookConfig::save() const {
 	
 	s.aotbAlwaysOnTop = static_cast<Settings::AlwaysOnTopBehaviour>(qcbAlwaysOnTop->currentIndex());
 	s.bAskOnQuit = qcbAskOnQuit->isChecked();
+	s.bEnableDeveloperMenu = qcbEnableDeveloperMenu->isChecked();
+	s.bLockLayout = qcbLockLayout->isChecked();
 	s.bHideInTray = qcbHideTray->isChecked();
 	s.bStateInTray = qcbStateInTray->isChecked();
 	s.bShowUserCount = qcbShowUserCount->isChecked();
@@ -221,16 +228,7 @@ void LookConfig::save() const {
 }
 
 void LookConfig::accept() const {
-	g.mw->setShowDockTitleBars(g.s.wlWindowLayout == Settings::LayoutCustom);
-}
-
-bool LookConfig::expert(bool b) {
-	qcbExpand->setVisible(b);
-	qliExpand->setVisible(b);
-	qcbUsersTop->setVisible(b);
-	qcbStateInTray->setVisible(b);
-	qcbShowContextMenuInMenuBar->setVisible(b);
-	return true;
+	g.mw->setShowDockTitleBars((g.s.wlWindowLayout == Settings::LayoutCustom) && !g.s.bLockLayout);
 }
 
 void LookConfig::themeDirectoryChanged() {

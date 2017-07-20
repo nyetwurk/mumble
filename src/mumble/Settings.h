@@ -63,6 +63,8 @@ struct OverlaySettings {
 
 	enum OverlaySort { Alphabetical, LastStateChange };
 
+	enum OverlayExclusionMode { LauncherFilterExclusionMode, WhitelistExclusionMode, BlacklistExclusionMode };
+
 	bool bEnable;
 
 	QString qsStyle;
@@ -119,9 +121,15 @@ struct OverlaySettings {
 	Qt::Alignment qaMutedDeafened;
 	Qt::Alignment qaAvatar;
 
-	bool bUseWhitelist;
-	QStringList qslBlacklist;
+	OverlayExclusionMode oemOverlayExcludeMode;
+	QStringList qslLaunchers;
+	QStringList qslLaunchersExclude;
 	QStringList qslWhitelist;
+	QStringList qslWhitelistExclude;
+	QStringList qslPaths;
+	QStringList qslPathsExclude;
+	QStringList qslBlacklist;
+	QStringList qslBlacklistExclude;
 
 	OverlaySettings();
 	void setPreset(const OverlayPresets preset = AvatarAndName);
@@ -147,6 +155,8 @@ struct Settings {
 	quint64 uiDoublePush;
 	quint64 pttHold;
 
+	/// Removed. This was previously used to configure whether the Mumble
+	/// ConfigDialog should show advanced options or not.
 	bool bExpert;
 
 	bool bTxAudioCue;
@@ -173,10 +183,12 @@ struct Settings {
 	QString qsTTSLanguage;
 	int iQuality, iMinLoudness, iVoiceHold, iJitterBufferSize;
 	int iNoiseSuppress;
+	quint64 uiAudioInputChannelMask;
 
 	// Idle auto actions
 	unsigned int iIdleTime;
 	IdleAction iaeIdleAction;
+	bool bUndoIdleActionUponActivity;
 
 	VADSource vsVAD;
 	float fVADmin, fVADmax;
@@ -203,7 +215,30 @@ struct Settings {
 	QList<QVariant> qlASIOspeaker;
 
 	QString qsCoreAudioInput, qsCoreAudioOutput;
+
 	QString qsWASAPIInput, qsWASAPIOutput;
+	/// qsWASAPIRole is configured via 'wasapi/role'.
+	/// It is a string explaining Mumble's purpose for opening
+	/// the audio device. This can be used to force Windows
+	/// to not treat Mumble as a communications program
+	/// (the default).
+	///
+	/// The default is "communications". When this is set,
+	/// Windows treats Mumble as a telephony app, including
+	/// potential audio ducking.
+	///
+	/// Other values include:
+	///
+	///   "console", which should be used for games, system
+	///              notification sounds, and voice commands.
+	///
+	///   "multimedia", which should be used for music, movies,
+	///                 narration, and live music recording.
+	///
+	/// This is practically a direct mapping of the ERole enum
+	/// from Windows: https://msdn.microsoft.com/en-us/library/windows/desktop/dd370842
+	QString qsWASAPIRole;
+
 	QByteArray qbaDXInput, qbaDXOutput;
 
 	bool bExclusiveInput, bExclusiveOutput;
@@ -230,6 +265,7 @@ struct Settings {
 	bool bEnableXInput2;
 	bool bEnableGKey;
 	bool bEnableXboxInput;
+	bool bEnableWinHooks;
 	/// Enable verbose logging in GlobalShortcutWin's DirectInput backend.
 	bool bDirectInputVerboseLogging;
 	QList<Shortcut> qlShortcuts;
@@ -258,6 +294,8 @@ struct Settings {
 	enum AlwaysOnTopBehaviour { OnTopNever, OnTopAlways, OnTopInMinimal, OnTopInNormal };
 	AlwaysOnTopBehaviour aotbAlwaysOnTop;
 	bool bAskOnQuit;
+	bool bEnableDeveloperMenu;
+	bool bLockLayout;
 	bool bHideInTray;
 	bool bStateInTray;
 	bool bUsage;
@@ -320,6 +358,9 @@ struct Settings {
 
 	// Network settings - SSL
 	QString qsSslCiphers;
+
+	// Privacy settings
+	bool bHideOS;
 
 	static const int ciDefaultMaxImageSize = 50 * 1024; // Restrict to 50KiB as a default
 	int iMaxImageSize;

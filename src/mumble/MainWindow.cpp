@@ -66,6 +66,7 @@ MainWindow::MainWindow(QWidget *p) : QMainWindow(p) {
 	qiIconMuteSelf.addFile(QLatin1String("skin:muted_self.svg"));
 	qiIconMuteServer.addFile(QLatin1String("skin:muted_server.svg"));
 	qiIconMuteSuppressed.addFile(QLatin1String("skin:muted_suppressed.svg"));
+	qiIconMutePushToMute.addFile(QLatin1String("skin:muted_pushtomute.svg"));
 	qiIconDeafSelf.addFile(QLatin1String("skin:deafened_self.svg"));
 	qiIconDeafServer.addFile(QLatin1String("skin:deafened_server.svg"));
 	qiTalkingOff.addFile(QLatin1String("skin:talking_off.svg"));
@@ -137,6 +138,8 @@ MainWindow::MainWindow(QWidget *p) : QMainWindow(p) {
 	qmUser = new QMenu(tr("&User"), this);
 	qmChannel = new QMenu(tr("&Channel"), this);
 
+	qmDeveloper = new QMenu(tr("&Developer"), this);
+
 	createActions();
 	setupUi(this);
 	setupGui();
@@ -155,6 +158,7 @@ MainWindow::MainWindow(QWidget *p) : QMainWindow(p) {
 	qmChannel_aboutToShow();
 	qmUser_aboutToShow();
 	on_qmConfig_aboutToShow();
+	qmDeveloper->addAction(qaDeveloperConsole);
 
 	setOnTop(g.s.aotbAlwaysOnTop == Settings::OnTopAlways ||
 	         (g.s.bMinimalView && g.s.aotbAlwaysOnTop == Settings::OnTopInMinimal) ||
@@ -167,7 +171,7 @@ MainWindow::MainWindow(QWidget *p) : QMainWindow(p) {
 
 void MainWindow::createActions() {
 	int idx = 1;
-	gsPushTalk=new GlobalShortcut(this, idx++, tr("Push-to-Talk", "Global Shortcut"), false);
+	gsPushTalk=new GlobalShortcut(this, idx++, tr("Push-to-Talk", "Global Shortcut"));
 	gsPushTalk->setObjectName(QLatin1String("PushToTalk"));
 	gsPushTalk->qsToolTip = tr("Push and hold this button to send voice.", "Global Shortcut");
 	gsPushTalk->qsWhatsThis = tr("This configures the push-to-talk button, and as long as you hold this button down, you will transmit voice.", "Global Shortcut");
@@ -176,12 +180,12 @@ void MainWindow::createActions() {
 	gsResetAudio=new GlobalShortcut(this, idx++, tr("Reset Audio Processor", "Global Shortcut"));
 	gsResetAudio->setObjectName(QLatin1String("ResetAudio"));
 
-	gsMuteSelf=new GlobalShortcut(this, idx++, tr("Mute Self", "Global Shortcut"), false, 0);
+	gsMuteSelf=new GlobalShortcut(this, idx++, tr("Mute Self", "Global Shortcut"), 0);
 	gsMuteSelf->setObjectName(QLatin1String("gsMuteSelf"));
 	gsMuteSelf->qsToolTip = tr("Set self-mute status.", "Global Shortcut");
 	gsMuteSelf->qsWhatsThis = tr("This will set or toggle your muted status. If you turn this off, you will also disable self-deafen.", "Global Shortcut");
 
-	gsDeafSelf=new GlobalShortcut(this, idx++, tr("Deafen Self", "Global Shortcut"), false, 0);
+	gsDeafSelf=new GlobalShortcut(this, idx++, tr("Deafen Self", "Global Shortcut"), 0);
 	gsDeafSelf->setObjectName(QLatin1String("gsDeafSelf"));
 	gsDeafSelf->qsToolTip = tr("Set self-deafen status.", "Global Shortcut");
 	gsDeafSelf->qsWhatsThis = tr("This will set or toggle your deafened status. If you turn this on, you will also enable self-mute.", "Global Shortcut");
@@ -196,7 +200,7 @@ void MainWindow::createActions() {
 	gsJoinChannel->setObjectName(QLatin1String("MetaChannel"));
 	gsJoinChannel->qsToolTip = tr("Use in conjunction with Whisper to.", "Global Shortcut");
 
-	gsToggleOverlay=new GlobalShortcut(this, idx++, tr("Toggle Overlay", "Global Shortcut"), false);
+	gsToggleOverlay=new GlobalShortcut(this, idx++, tr("Toggle Overlay", "Global Shortcut"));
 	gsToggleOverlay->setObjectName(QLatin1String("ToggleOverlay"));
 	gsToggleOverlay->qsToolTip = tr("Toggle state of in-game overlay.", "Global Shortcut");
 	gsToggleOverlay->qsWhatsThis = tr("This will switch the states of the in-game overlay.", "Global Shortcut");
@@ -215,7 +219,7 @@ void MainWindow::createActions() {
 	qstiIcon->setToolTip(tr("Mumble -- %1").arg(QLatin1String(MUMBLE_RELEASE)));
 	qstiIcon->setObjectName(QLatin1String("Icon"));
 
-	gsWhisper = new GlobalShortcut(this, idx++, tr("Whisper/Shout"), false, QVariant::fromValue(ShortcutTarget()));
+	gsWhisper = new GlobalShortcut(this, idx++, tr("Whisper/Shout"), QVariant::fromValue(ShortcutTarget()));
 	gsWhisper->setObjectName(QLatin1String("gsWhisper"));
 
 	gsLinkChannel=new GlobalShortcut(this, idx++, tr("Link Channel", "Global Shortcut"));
@@ -225,7 +229,7 @@ void MainWindow::createActions() {
 	gsCycleTransmitMode=new GlobalShortcut(this, idx++, tr("Cycle Transmit Mode", "Global Shortcut"));
 	gsCycleTransmitMode->setObjectName(QLatin1String("gsCycleTransmitMode"));
 
-	gsSendTextMessage=new GlobalShortcut(this, idx++, tr("Send Text Message", "Global Shortcut"), true, QVariant(QString()));
+	gsSendTextMessage=new GlobalShortcut(this, idx++, tr("Send Text Message", "Global Shortcut"), QVariant(QString()));
 	gsSendTextMessage->setObjectName(QLatin1String("gsSendTextMessage"));
 
 	gsSendClipboardTextMessage=new GlobalShortcut(this, idx++, tr("Send Clipboard Text Message", "Global Shortcut"));
@@ -297,7 +301,7 @@ void MainWindow::setupGui()  {
 	qteChat->setDefaultText(tr("<center>Not connected</center>"), true);
 	qteChat->setEnabled(false);
 
-	setShowDockTitleBars(g.s.wlWindowLayout == Settings::LayoutCustom);
+	setShowDockTitleBars((g.s.wlWindowLayout == Settings::LayoutCustom) && !g.s.bLockLayout);
 
 #ifdef Q_OS_MAC
 	// Workaround for QTBUG-3116 -- using a unified toolbar on Mac OS X
@@ -378,8 +382,7 @@ void MainWindow::updateWindowTitle() {
 
 void MainWindow::updateToolbar() {
 	bool layoutIsCustom = g.s.wlWindowLayout == Settings::LayoutCustom;
-
-	qtIconToolbar->setMovable(layoutIsCustom);
+	qtIconToolbar->setMovable(layoutIsCustom && !g.s.bLockLayout);
 
 	// Update the toolbar so the movable flag takes effect.
 	if (layoutIsCustom) {
@@ -508,7 +511,7 @@ void MainWindow::changeEvent(QEvent *e) {
 	// So, let's not do it on macOS.
 
 #else
-	if (isMinimized() && g.s.bHideInTray) {
+	if (isMinimized() && qstiIcon->isSystemTrayAvailable() && g.s.bHideInTray) {
 		// Workaround http://qt-project.org/forums/viewthread/4423/P15/#50676
 		QTimer::singleShot(0, this, SLOT(hide()));
 	}
@@ -575,6 +578,8 @@ void MainWindow::updateTrayIcon() {
 		qstiIcon->setIcon(qiIconMuteServer);
 	} else if (p && p->bSuppress) {
 		qstiIcon->setIcon(qiIconMuteSuppressed);
+	} else if (g.s.bStateInTray && g.bPushToMute) {
+		qstiIcon->setIcon(qiIconMutePushToMute);
 	} else if (p && g.s.bStateInTray) {
 		switch (p->tsState) {
 			case Settings::Talking:
@@ -611,7 +616,7 @@ void MainWindow::updateTransmitModeComboBox() {
 }
 
 QMenu *MainWindow::createPopupMenu() {
-	if (g.s.wlWindowLayout == Settings::LayoutCustom) {
+	if ((g.s.wlWindowLayout == Settings::LayoutCustom) && !g.s.bLockLayout) {
 		return QMainWindow::createPopupMenu();
 	}
 
@@ -715,6 +720,14 @@ void MainWindow::on_qteLog_customContextMenuRequested(const QPoint &mpos) {
 
 	QTextCursor cursor = qteLog->cursorForPosition(mpos);
 	QTextCharFormat fmt = cursor.charFormat();
+
+	// Work around imprecise cursor image identification
+	// Apparently, the cursor is shifted half the characters width to the right on the image
+	// element. This is in contrast to hyperlinks for example, which have correct edge detection.
+	// For the image, we get the right half (plus the left half of the next character) for the
+	// image, and have to move the cursor forward to also detect on the left half of the image
+	// (plus the right half of the previous character).
+	// It is unclear why we have to use NextCharacter instead of PreviousCharacter.
 	if (fmt.objectType() == QTextFormat::NoObject) {
 		cursor.movePosition(QTextCursor::NextCharacter);
 		fmt = cursor.charFormat();
@@ -1036,6 +1049,22 @@ void MainWindow::setupView(bool toggle_minimize) {
 		menuBar()->removeAction(qmChannel->menuAction());
 	}
 
+	if (g.s.bEnableDeveloperMenu) {
+		bool found = false;
+		foreach(QAction *a, menuBar()->actions()) {
+			if (a == qmDeveloper->menuAction()) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			menuBar()->insertMenu(qmHelp->menuAction(), qmDeveloper);
+		}
+	} else {
+		menuBar()->removeAction(qmDeveloper->menuAction());
+	}
+
 	if (! showit) {
 		qdwLog->setVisible(showit);
 		qdwChat->setVisible(showit);
@@ -1216,6 +1245,12 @@ void MainWindow::on_qmServer_aboutToShow() {
 	qmServer->addAction(qaServerUserList);
 	qmServer->addAction(qaServerBanList);
 	qmServer->addSeparator();
+#if !defined(Q_OS_MAC)
+	// Don't add qaHide on macOS.
+	// There is no way to bring the window back (no 'tray' for Mumble on macOS),
+	// and the system has built-in hide functionality via Cmd-H.
+	qmServer->addAction(qaHide);
+#endif
 	qmServer->addAction(qaQuit);
 
 	qaServerBanList->setEnabled(g.pPermissions & (ChanACL::Ban | ChanACL::Write));
@@ -1793,6 +1828,10 @@ void MainWindow::on_qaUserInformation_triggered() {
 	g.sh->requestUserStats(p->uiSession, false);
 }
 
+void MainWindow::on_qaHide_triggered() {
+	hide();
+}
+
 void MainWindow::on_qaQuit_triggered() {
 	bSuppressAskOnQuit = true;
 	this->close();
@@ -2336,9 +2375,7 @@ void MainWindow::on_qaAudioUnlink_triggered() {
 }
 
 void MainWindow::on_qaConfigDialog_triggered() {
-	QDialog *dlg = NULL;
-	if (! dlg)
-		dlg = new ConfigDialog(this);
+	QDialog *dlg = new ConfigDialog(this);
 
 	if (dlg->exec() == QDialog::Accepted) {
 		setupView(false);
@@ -2452,21 +2489,26 @@ void MainWindow::pttReleased() {
 
 void MainWindow::on_PushToMute_triggered(bool down, QVariant) {
 	g.bPushToMute = down;
+	updateTrayIcon();
 }
 
 void MainWindow::on_VolumeUp_triggered(bool down, QVariant) {
 	if (down) {
-		float v = floorf(g.s.fVolume * 10.0f);
-		if (v < 20.0f)
-			g.s.fVolume = ++v / 10.0f;
+		float vol = g.s.fVolume + 0.1f;
+		if (vol > 2.0f) {
+			vol = 2.0f;
+		}
+		g.s.fVolume = vol;
 	}
 }
 
 void MainWindow::on_VolumeDown_triggered(bool down, QVariant) {
 	if (down) {
-		float v = ceilf(g.s.fVolume * 10.0f);
-		if (v > 0.0f)
-			g.s.fVolume = --v / 10.0f;
+		float vol = g.s.fVolume - 0.1f;
+		if (vol < 0.0f) {
+			vol = 0.0f;
+		}
+		g.s.fVolume = vol;
 	}
 }
 
@@ -3116,7 +3158,7 @@ void MainWindow::on_qteLog_highlighted(const QUrl &url) {
 	if (! url.isValid())
 		QToolTip::hideText();
 	else {
-		if (qApp->activeWindow() != NULL) {
+		if (isActiveWindow()) {
 			QToolTip::showText(QCursor::pos(), url.toString(), qteLog, QRect());
 		}
 	}

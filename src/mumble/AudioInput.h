@@ -6,6 +6,7 @@
 #ifndef MUMBLE_MUMBLE_AUDIOINPUT_H_
 #define MUMBLE_MUMBLE_AUDIOINPUT_H_
 
+#include <boost/shared_ptr.hpp>
 #include <boost/array.hpp>
 #include <speex/speex.h>
 #include <speex/speex_echo.h>
@@ -13,7 +14,6 @@
 #include <speex/speex_resampler.h>
 #include <QtCore/QObject>
 #include <QtCore/QThread>
-#include <QtCore/QSharedPointer>
 #include <vector>
 
 #include "Audio.h"
@@ -25,7 +25,7 @@ class AudioInput;
 class CELTCodec;
 struct CELTEncoder;
 struct OpusEncoder;
-typedef QSharedPointer<AudioInput> AudioInputPtr;
+typedef boost::shared_ptr<AudioInput> AudioInputPtr;
 
 class AudioInputRegistrar {
 	private:
@@ -58,7 +58,7 @@ class AudioInput : public QThread {
 	protected:
 		typedef enum { CodecCELT, CodecSpeex } CodecFormat;
 		typedef enum { SampleShort, SampleFloat } SampleFormat;
-		typedef void (*inMixerFunc)(float * RESTRICT, const void * RESTRICT, unsigned int, unsigned int);
+		typedef void (*inMixerFunc)(float * RESTRICT, const void * RESTRICT, unsigned int, unsigned int, quint64);
 	private:
 		SpeexResamplerState *srsMic, *srsEcho;
 
@@ -69,7 +69,7 @@ class AudioInput : public QThread {
 
 		unsigned int iMicFilled, iEchoFilled;
 		inMixerFunc imfMic, imfEcho;
-		inMixerFunc chooseMixer(const unsigned int nchan, SampleFormat sf);
+		inMixerFunc chooseMixer(const unsigned int nchan, SampleFormat sf, quint64 mask);
 		void resetAudioProcessor();
 
 		OpusEncoder *opusState;
@@ -89,6 +89,7 @@ class AudioInput : public QThread {
 		unsigned int iMicLength, iEchoLength;
 		unsigned int iMicSampleSize, iEchoSampleSize;
 		unsigned int iEchoMCLength, iEchoFrameSize;
+		quint64 uiMicChannelMask, uiEchoChannelMask;
 
 		bool bEchoMulti;
 		int	iFrameSize;
@@ -142,6 +143,10 @@ class AudioInput : public QThread {
 		void doDeaf();
 		void doMute();
 	public:
+		typedef enum { ActivityStateIdle, ActivityStateReturnedFromIdle, ActivityStateActive } ActivityState;
+
+		ActivityState activityState;
+
 		bool bResetProcessor;
 
 		Timer tIdle;
@@ -153,7 +158,16 @@ class AudioInput : public QThread {
 		static int getNetworkBandwidth(int bitrate, int frames);
 		static void setMaxBandwidth(int bitspersec);
 
+		/// Construct an AudioInput.
+		///
+		/// This constructor is only ever called by Audio::startInput(), and is guaranteed
+		/// to be called on the application's main thread.
 		AudioInput();
+
+		/// Destroy an AudioInput.
+		///
+		/// This destructor is only ever called by Audio::stopInput() and Audio::stop(),
+		/// and is guaranteed to be called on the application's main thread.
 		~AudioInput() Q_DECL_OVERRIDE;
 		void run() Q_DECL_OVERRIDE = 0;
 		virtual bool isAlive() const;

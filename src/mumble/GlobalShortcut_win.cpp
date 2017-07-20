@@ -22,7 +22,7 @@
 // from os_win.cpp
 extern HWND mumble_mw_hwnd;
 
-static uint qHash(const GUID &a) {
+uint qHash(const GUID &a) {
 	uint val = a.Data1 ^ a.Data2 ^ a.Data3;
 	for (int i=0;i<8;i++)
 		val += a.Data4[i];
@@ -45,6 +45,7 @@ GlobalShortcutWin::GlobalShortcutWin()
 	: pDI(NULL)
 	, hhMouse(NULL)
 	, hhKeyboard(NULL)
+	, uiHardwareDevices(0)
 #ifdef USE_GKEY
 	, gkey(NULL)
 #endif
@@ -52,8 +53,7 @@ GlobalShortcutWin::GlobalShortcutWin()
 	, xboxinput(NULL)
 	, nxboxinput(0)
 #endif
-	, uiHardwareDevices(0) {
-
+{
 	// Hidden setting to disable hooking
 	bHook = g.qs->value(QLatin1String("winhooks"), true).toBool();
 
@@ -82,14 +82,14 @@ void GlobalShortcutWin::run() {
 	DWORD type = 0;
 	DWORD value = 0;
 	DWORD len = sizeof(DWORD);
-	if (RegOpenKeyExA(HKEY_CURRENT_USER, "Control Panel\\Desktop", NULL, KEY_READ, &key) == ERROR_SUCCESS) {
+	if (RegOpenKeyExA(HKEY_CURRENT_USER, "Control Panel\\Desktop", 0, KEY_READ, &key) == ERROR_SUCCESS) {
 		LONG err = RegQueryValueExA(key, "LowLevelHooksTimeout", NULL, &type, reinterpret_cast<LPBYTE>(&value), &len);
 		if (err == ERROR_SUCCESS && type == REG_DWORD) {
-			qWarning("GlobalShortcutWin: Found LowLevelHooksTimeout with value = 0x%x", value);
+			qWarning("GlobalShortcutWin: Found LowLevelHooksTimeout with value = 0x%lx", static_cast<unsigned long>(value));
 		} else if (err == ERROR_FILE_NOT_FOUND) {
 			qWarning("GlobalShortcutWin: No LowLevelHooksTimeout registry key found.");
 		} else {
-			qWarning("GlobalShortcutWin: Error looking up LowLevelHooksTimeout. (Error: 0x%x, Type: 0x%x, Value: 0x%x)", err, type, value);
+			qWarning("GlobalShortcutWin: Error looking up LowLevelHooksTimeout. (Error: 0x%lx, Type: 0x%lx, Value: 0x%lx)", static_cast<unsigned long>(err), static_cast<unsigned long>(type), static_cast<unsigned long>(value));
 		}
 	}
 
@@ -113,13 +113,15 @@ void GlobalShortcutWin::run() {
 	}
 #endif
 
-	QTimer * timer = new QTimer(this);
+	QTimer *timer = new QTimer;
 	connect(timer, SIGNAL(timeout()), this, SLOT(timeTicked()));
 	timer->start(20);
 
 	setPriority(QThread::TimeCriticalPriority);
 
 	exec();
+
+	delete timer;
 
 #ifdef USE_GKEY
 	delete gkey;
@@ -371,10 +373,10 @@ BOOL CALLBACK GlobalShortcutWin::EnumDeviceObjectsCallback(LPCDIDEVICEOBJECTINST
 	id->qhNames[lpddoi->dwType] = name;
 
 	if (g.s.bDirectInputVerboseLogging) {
-		qWarning("GlobalShortcutWin: EnumObjects: device %s %s object 0x%.8x %s",
+		qWarning("GlobalShortcutWin: EnumObjects: device %s %s object 0x%.8lx %s",
 		         qPrintable(QUuid(id->guid).toString()),
 		         qPrintable(id->name),
-		         lpddoi->dwType,
+		         static_cast<unsigned long>(lpddoi->dwType),
 		         qPrintable(name));
 	}
 
@@ -454,13 +456,13 @@ BOOL GlobalShortcutWin::EnumDevicesCB(LPCDIDEVICEINSTANCE pdidi, LPVOID pContext
 	// blacklist, we need a more structured aproach.
 	{
 		if (id->vendor_id == 0x262A) {
-			qWarning("GlobalShortcutWin: rejected blacklisted device %s (GUID: %s, PGUID: %s, VID: 0x%.4x, PID: 0x%.4x, TYPE: 0x%.8x)",
+			qWarning("GlobalShortcutWin: rejected blacklisted device %s (GUID: %s, PGUID: %s, VID: 0x%.4x, PID: 0x%.4x, TYPE: 0x%.8lx)",
 			         qPrintable(id->name),
 			         qPrintable(id->vguid.toString()),
 			         qPrintable(id->vguidproduct.toString()),
 			         id->vendor_id,
 			         id->product_id,
-			         pdidi->dwDevType);
+			         static_cast<unsigned long>(pdidi->dwDevType));
 			delete id;
 			return DIENUM_CONTINUE;
 		}
@@ -520,12 +522,12 @@ BOOL GlobalShortcutWin::EnumDevicesCB(LPCDIDEVICEINSTANCE pdidi, LPVOID pContext
 		if (FAILED(hr = id->pDID->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph)))
 			qFatal("GlobalShortcutWin: SetProperty: %lx", hr);
 
-		qWarning("Adding device %s %s %s:%d type 0x%.8x guid product %s",
+		qWarning("Adding device %s %s %s:%d type 0x%.8lx guid product %s",
 		         qPrintable(QUuid(id->guid).toString()),
 		         qPrintable(name),
 		         qPrintable(sname),
 		         id->qhNames.count(),
-		         pdidi->dwDevType,
+		         static_cast<unsigned long>(pdidi->dwDevType),
 		         qPrintable(id->vguidproduct.toString()));
 
 		cbgsw->qhInputDevices[id->guid] = id;
@@ -606,7 +608,7 @@ void GlobalShortcutWin::timeTicked() {
 	}
 
 #ifdef USE_GKEY
-	if (g.s.bEnableGKey && gkey->isValid()) {
+	if (g.s.bEnableGKey && gkey != NULL && gkey->isValid()) {
 		for (int button = GKEY_MIN_MOUSE_BUTTON; button <= GKEY_MAX_MOUSE_BUTTON; button++) {
 			QList<QVariant> ql;
 			ql << button;
@@ -627,7 +629,7 @@ void GlobalShortcutWin::timeTicked() {
 #endif
 
 #ifdef USE_XBOXINPUT
-	if (g.s.bEnableXboxInput && xboxinput->isValid() && nxboxinput > 0) {
+	if (g.s.bEnableXboxInput && xboxinput != NULL && xboxinput->isValid() && nxboxinput > 0) {
 		XboxInputState state;
 		for (uint32_t i = 0; i < XBOXINPUT_MAX_DEVICES; i++) {
 			if (xboxinput->GetState(i, &state) == 0) {
@@ -710,7 +712,7 @@ void GlobalShortcutWin::timeTicked() {
 	// behavior of the system's mouse input.
 	if (bHook && hhMouse == NULL && hhKeyboard == NULL) {
 		HMODULE hSelf;
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (wchar_t *) &HookKeyboard, &hSelf);
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCTSTR>(&HookKeyboard), &hSelf);
 		hhMouse = SetWindowsHookEx(WH_MOUSE_LL, HookMouse, hSelf, 0);
 		hhKeyboard = SetWindowsHookEx(WH_KEYBOARD_LL, HookKeyboard, hSelf, 0);
 	}
@@ -734,7 +736,7 @@ QString GlobalShortcutWin::buttonName(const QVariant &v) {
 	QString name=QLatin1String("Unknown");
 
 #ifdef USE_GKEY
-	if (g.s.bEnableGKey && gkey->isValid()) {
+	if (g.s.bEnableGKey && gkey != NULL && gkey->isValid()) {
 		bool isGKey = false;
 		if (guid == GKeyLibrary::quMouse) {
 			isGKey = true;
@@ -751,7 +753,7 @@ QString GlobalShortcutWin::buttonName(const QVariant &v) {
 #endif
 
 #ifdef USE_XBOXINPUT
-	if (g.s.bEnableXboxInput && xboxinput->isValid() && guid == XboxInput::s_XboxInputGuid) {
+	if (g.s.bEnableXboxInput && xboxinput != NULL && xboxinput->isValid() && guid == XboxInput::s_XboxInputGuid) {
 		uint32_t idx = (type >> 24) & 0xff;
 		uint32_t button = (type & 0x00ffffff);
 

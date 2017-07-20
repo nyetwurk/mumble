@@ -68,8 +68,9 @@ class MainWindow : public QMainWindow, public MessageHandler, public Ui::MainWin
 		QSystemTrayIcon *qstiIcon;
 		QMenu *qmUser;
 		QMenu *qmChannel;
+		QMenu *qmDeveloper;
 		QMenu *qmTray;
-		QIcon qiIcon, qiIconMuteSelf, qiIconMuteServer, qiIconDeafSelf, qiIconDeafServer, qiIconMuteSuppressed;
+		QIcon qiIcon, qiIconMutePushToMute, qiIconMuteSelf, qiIconMuteServer, qiIconDeafSelf, qiIconDeafServer, qiIconMuteSuppressed;
 		QIcon qiTalkingOn, qiTalkingWhisper, qiTalkingShout, qiTalkingOff;
 		QMap<unsigned int, UserLocalVolumeDialog *> qmUserVolTracker;
 
@@ -239,6 +240,7 @@ class MainWindow : public QMainWindow, public MessageHandler, public Ui::MainWin
 		void on_qaHelpAboutQt_triggered();
 		void on_qaHelpVersionCheck_triggered();
 		void on_qaQuit_triggered();
+		void on_qaHide_triggered();
 		void on_qteChat_tabPressed();
 		void on_qteChat_backtabPressed();
 		void on_qteChat_ctrlSpacePressed();

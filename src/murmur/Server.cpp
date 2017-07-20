@@ -19,6 +19,7 @@
 #include "ServerUser.h"
 #include "Version.h"
 #include "HTMLFilter.h"
+#include "HostAddress.h"
 
 #ifdef USE_BONJOUR
 #include "BonjourServer.h"
@@ -50,6 +51,13 @@ bool SslServer::hasDualStackSupport() {
 	bool result = false;
 #ifdef Q_OS_UNIX
 	int s = ::socket(AF_INET6, SOCK_STREAM, 0);
+	if (s != -1) {
+		const int ipv6only = 0;
+		if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&ipv6only), sizeof(ipv6only)) == 0) {
+			result = true;
+		}
+		::close(s);
+	}
 #else
 	WSADATA wsaData;
 	WORD wVersionRequested = MAKEWORD(2, 2);
@@ -59,17 +67,11 @@ bool SslServer::hasDualStackSupport() {
 	}
 
 	SOCKET s = ::WSASocket(AF_INET6, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
-#endif
-
-	if (s != -1) { // Equals INVALID_SOCKET
+	if (s != INVALID_SOCKET) {
 		const int ipv6only = 0;
 		if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&ipv6only), sizeof(ipv6only)) == 0) {
 			result = true;
 		}
-#ifdef Q_OS_UNIX
-		::close(s);
-	}
-#else
 		closesocket(s);
 	}
 	WSACleanup();
@@ -99,6 +101,7 @@ Server::Server(int snum, QObject *p) : QThread(p) {
 #ifdef USE_BONJOUR
 	bsRegistration = NULL;
 #endif
+	bUsingMetaCert = false;
 
 #ifdef Q_OS_UNIX
 	aiNotify[0] = aiNotify[1] = -1;
@@ -907,7 +910,7 @@ void Server::sendMessage(ServerUser *u, const char *data, int len, QByteArray &c
 #ifdef Q_OS_WIN
 		DWORD dwFlow = 0;
 		if (Meta::hQoS)
-			QOSAddSocketToFlow(Meta::hQoS, u->sUdpSocket, reinterpret_cast<struct sockaddr *>(& u->saiUdpAddress), QOSTrafficTypeVoice, QOS_NON_ADAPTIVE_FLOW, &dwFlow);
+			QOSAddSocketToFlow(Meta::hQoS, u->sUdpSocket, reinterpret_cast<struct sockaddr *>(& u->saiUdpAddress), QOSTrafficTypeVoice, QOS_NON_ADAPTIVE_FLOW, reinterpret_cast<PQOS_FLOWID>(&dwFlow));
 #endif
 #ifdef Q_OS_LINUX
 		struct msghdr msg;
@@ -977,6 +980,7 @@ void Server::processMsg(ServerUser *u, const char *data, int len) {
 		return;
 
 	QByteArray qba, qba_npos;
+	unsigned int counter;
 	char buffer[UDP_PACKET_SIZE];
 	PacketDataStream pdi(data + 1, len - 1);
 	PacketDataStream pds(buffer+1, UDP_PACKET_SIZE-1);
@@ -997,9 +1001,11 @@ void Server::processMsg(ServerUser *u, const char *data, int len) {
 		}
 	}
 
+	// Read the sequence number.
+	pdi >> counter;
+
 	// Skip to the end of the voice data.
 	if ((type >> 5) != MessageHandler::UDPVoiceOpus) {
-		unsigned int counter;
 		do {
 			counter = pdi.next8();
 			pdi.skip(counter & 0x7f);
@@ -1193,8 +1199,23 @@ void Server::newClient() {
 
 		sock->setPrivateKey(qskKey);
 		sock->setLocalCertificate(qscCert);
+
+		// Treat the leaf certificate as a root.
+		// This shouldn't strictly be necessary,
+		// and is a left-over from early on.
+		// Perhaps it is necessary for self-signed
+		// certs?
 		sock->addCaCertificate(qscCert);
-		sock->addCaCertificates(qlCA);
+
+		// Add CA certificates specified via
+		// murmur.ini's sslCA option.
+		sock->addCaCertificates(Meta::mp.qlCA);
+
+		// Add intermediate CAs found in the PEM
+		// bundle used for this server's certificate.
+		sock->addCaCertificates(qlIntermediates);
+
+		sock->setCiphers(Meta::mp.qlCiphers);
 
 #if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
 		QSslConfiguration cfg = sock->sslConfiguration();

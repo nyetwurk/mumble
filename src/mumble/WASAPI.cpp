@@ -13,16 +13,31 @@
 // Now that Win7 is published, which includes public versions of these
 // interfaces, we simply inherit from those but use the "old" IIDs.
 
+DEFINE_GUID(IID_IVistaAudioSessionControl2, 0x33969B1DL, 0xD06F, 0x4281, 0xB8, 0x37, 0x7E, 0xAA, 0xFD, 0x21, 0xA9, 0xC0);
 MIDL_INTERFACE("33969B1D-D06F-4281-B837-7EAAFD21A9C0")
 IVistaAudioSessionControl2 :
 public IAudioSessionControl2 {
 };
 
+DEFINE_GUID(IID_IAudioSessionQuery, 0x94BE9D30L, 0x53AC, 0x4802, 0x82, 0x9C, 0xF1, 0x3E, 0x5A, 0xD3, 0x47, 0x75);
 MIDL_INTERFACE("94BE9D30-53AC-4802-829C-F13E5AD34775")
 IAudioSessionQuery :
 public IUnknown {
 	virtual HRESULT STDMETHODCALLTYPE GetQueryInterface(IAudioSessionEnumerator **) = 0;
 };
+
+/// Convert the configured 'wasapi/role' to an ERole.
+static ERole WASAPIRoleFromSettings() {
+	QString role = g.s.qsWASAPIRole.toLower().trimmed();
+
+	if (role == QLatin1String("console")) {
+		return eConsole;
+	} else if (role == QLatin1String("multimedia")) {
+		return eMultimedia;
+	}
+
+	return eCommunications;
+}
 
 class WASAPIInputRegistrar : public AudioInputRegistrar {
 	public:
@@ -147,7 +162,7 @@ bool getAndCheckMixFormat(const char* sourceName,
 			return false;
 		}
 	} else {
-		qFatal("%s: %s unexpected sample format %d", sourceName, deviceName, sampleFormat);
+		qFatal("%s: %s unexpected sample format %lu", sourceName, deviceName, static_cast<unsigned long>(*sampleFormat));
 		return false;
 	}
 	
@@ -286,7 +301,6 @@ WASAPIInput::~WASAPIInput() {
 static IMMDevice *openNamedOrDefaultDevice(const QString& name, EDataFlow dataFlow, ERole role) {
 	HRESULT hr;
 	IMMDeviceEnumerator *pEnumerator = NULL;
-	IMMDevice *pDevice = NULL;
 
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void **>(&pEnumerator));
 	if (!pEnumerator || FAILED(hr)) {
@@ -294,6 +308,7 @@ static IMMDevice *openNamedOrDefaultDevice(const QString& name, EDataFlow dataFl
 		return NULL;
 	}
 
+	IMMDevice *pDevice = NULL;
 	// Try to find a device pointer for |name|.
 	if (!name.isEmpty()) {
 		STACKVAR(wchar_t, devname, name.length() + 1);
@@ -353,7 +368,6 @@ void WASAPIInput::run() {
 	WAVEFORMATEXTENSIBLE wfe;
 	UINT32 bufferFrameCount;
 	UINT32 numFramesAvailable;
-	UINT32 numFramesLeft;
 	UINT32 micPacketLength = 0, echoPacketLength = 0;
 	UINT32 allocLength;
 	UINT64 devicePosition;
@@ -379,13 +393,13 @@ void WASAPIInput::run() {
 	}
 
 	// Open mic device.
-	pMicDevice = openNamedOrDefaultDevice(g.s.qsWASAPIInput, eCapture, eCommunications);
+	pMicDevice = openNamedOrDefaultDevice(g.s.qsWASAPIInput, eCapture, WASAPIRoleFromSettings());
 	if (!pMicDevice)
 		goto cleanup;
 
 	// Open echo capture device.
 	if (doecho) {
-		pEchoDevice = openNamedOrDefaultDevice(g.s.qsWASAPIOutput, eRender, eCommunications);
+		pEchoDevice = openNamedOrDefaultDevice(g.s.qsWASAPIOutput, eRender, WASAPIRoleFromSettings());
 		if (!pEchoDevice)
 			doecho = false;
 	}
@@ -528,8 +542,6 @@ void WASAPIInput::run() {
 				if (FAILED(hr))
 					goto cleanup;
 
-				numFramesLeft = numFramesAvailable;
-
 				UINT32 nFrames = numFramesAvailable * micpwfx->nChannels;
 				if (nFrames > allocLength) {
 					delete [] sbuff;
@@ -560,7 +572,6 @@ void WASAPIInput::run() {
 			while ((micPacketLength > 0) || (echoPacketLength > 0)) {
 				if (echoPacketLength > 0) {
 					hr = pEchoCaptureClient->GetBuffer(&pData, &numFramesAvailable, &flags, &devicePosition, &qpcPosition);
-					numFramesLeft = numFramesAvailable;
 					if (FAILED(hr)) {
 						qWarning("WASAPIInput: GetBuffer failed: hr=0x%08lx", hr);
 						goto cleanup;
@@ -581,7 +592,6 @@ void WASAPIInput::run() {
 					addEcho(tbuff, numFramesAvailable);
 				} else if (micPacketLength > 0) {
 					hr = pMicCaptureClient->GetBuffer(&pData, &numFramesAvailable, &flags, &devicePosition, &qpcPosition);
-					numFramesLeft = numFramesAvailable;
 					if (FAILED(hr)) {
 						qWarning("WASAPIInput: GetBuffer failed: hr=0x%08lx", hr);
 						goto cleanup;
@@ -682,7 +692,7 @@ void WASAPIOutput::setVolumes(IMMDevice *pDevice, bool talking) {
 		IAudioSessionEnumerator *pEnumerator = NULL;
 		IAudioSessionQuery *pMysticQuery = NULL;
 		if (! bIsWin7) {
-			if (SUCCEEDED(hr = pAudioSessionManager->QueryInterface(__uuidof(IAudioSessionQuery), (void **) &pMysticQuery))) {
+			if (SUCCEEDED(hr = pAudioSessionManager->QueryInterface(IID_IAudioSessionQuery, (void **) &pMysticQuery))) {
 				hr = pMysticQuery->GetQueryInterface(&pEnumerator);
 			}
 		} else {
@@ -762,7 +772,7 @@ bool WASAPIOutput::setVolumeForSessionControl(IAudioSessionControl *control, con
 	HRESULT hr;
 	IAudioSessionControl2 *pControl2 = NULL;
 
-	if (!SUCCEEDED(hr = control->QueryInterface(bIsWin7 ? __uuidof(IAudioSessionControl2) : __uuidof(IVistaAudioSessionControl2), (void **) &pControl2)))
+	if (!SUCCEEDED(hr = control->QueryInterface(bIsWin7 ? __uuidof(IAudioSessionControl2) : IID_IVistaAudioSessionControl2, (void **) &pControl2)))
 		return false;
 	
 	bool result = setVolumeForSessionControl2(pControl2, mumblePID, seen);
@@ -836,6 +846,7 @@ void WASAPIOutput::run() {
 	bool lastspoke = false;
 	REFERENCE_TIME bufferDuration = (g.s.iOutputDelay > 1) ? (g.s.iOutputDelay + 1) * 100000 : 0;
 	bool exclusive = false;
+	bool mixed = false;
 
 	CoInitialize(NULL);
 
@@ -847,7 +858,7 @@ void WASAPIOutput::run() {
 	}
 
 	// Open the output device.
-	pDevice = openNamedOrDefaultDevice(g.s.qsWASAPIOutput, eRender, eCommunications);
+	pDevice = openNamedOrDefaultDevice(g.s.qsWASAPIOutput, eRender, WASAPIRoleFromSettings());
 	if (!pDevice)
 		goto cleanup;
 
@@ -928,7 +939,7 @@ void WASAPIOutput::run() {
 			WAVEFORMATEX *closestFormat = NULL;
 			hr = pAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, pwfx, &closestFormat);
 			if (hr == S_FALSE) {
-				qWarning("WASAPIOutput: Driver says no to 2 channel output. Closest format: %d channels @ %d kHz", closestFormat->nChannels, closestFormat->nSamplesPerSec);
+				qWarning("WASAPIOutput: Driver says no to 2 channel output. Closest format: %d channels @ %lu kHz", closestFormat->nChannels, static_cast<unsigned long>(closestFormat->nSamplesPerSec));
 				CoTaskMemFree(pwfx);
 				
 				// Fall back to whatever the device offers.
@@ -1002,7 +1013,6 @@ void WASAPIOutput::run() {
 	iChannels = pwfx->nChannels;
 	initializeMixer(chanmasks);
 
-	bool mixed = false;
 	numFramesAvailable = 0;
 
 	while (bRunning && ! FAILED(hr)) {
@@ -1068,7 +1078,9 @@ cleanup:
 	if (pwfx)
 		CoTaskMemFree(pwfx);
 
-	setVolumes(pDevice, false);
+	if (pDevice) {
+		setVolumes(pDevice, false);
+	}
 
 	if (pAudioClient) {
 		pAudioClient->Stop();

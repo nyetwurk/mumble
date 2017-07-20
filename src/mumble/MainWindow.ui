@@ -68,12 +68,6 @@
     <addaction name="separator"/>
     <addaction name="qaHelpVersionCheck"/>
    </widget>
-   <widget class="QMenu" name="qmDeveloper">
-    <property name="title">
-     <string>&amp;Developer</string>
-    </property>
-    <addaction name="qaDeveloperConsole"/>
-   </widget>
    <widget class="QMenu" name="qmServer">
     <property name="title">
      <string>S&amp;erver</string>
@@ -99,7 +93,6 @@
    <addaction name="qmServer"/>
    <addaction name="qmSelf"/>
    <addaction name="qmConfig"/>
-   <addaction name="qmDeveloper"/>
    <addaction name="qmHelp"/>
   </widget>
   <widget class="QDockWidget" name="qdwLog">
@@ -207,13 +200,24 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
+  <action name="qaHide">
+   <property name="text">
+    <string>&amp;Hide Mumble</string>
+   </property>
+   <property name="toolTip">
+    <string>Hides the main Mumble window.</string>
+   </property>
+   <property name="whatsThis">
+    <string>Hides the main Mumble window. Restore by clicking on the tray icon or starting Mumble again.</string>
+   </property>
+  </action>
   <action name="qaServerConnect">
    <property name="icon">
     <iconset>
      <normaloff>skin:categories/applications-internet.svg</normaloff>skin:categories/applications-internet.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Connect</string>
+    <string>&amp;Connect...</string>
    </property>
    <property name="toolTip">
     <string>Open the server connection dialog</string>
@@ -244,7 +248,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>&amp;Ban list</string>
+    <string>&amp;Ban list...</string>
    </property>
    <property name="toolTip">
     <string>Edit ban list on server</string>
@@ -262,7 +266,7 @@
      <normaloff>skin:Information_icon.svg</normaloff>skin:Information_icon.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Information</string>
+    <string>&amp;Information...</string>
    </property>
    <property name="toolTip">
     <string>Show information about the server connection</string>
@@ -276,7 +280,7 @@
   </action>
   <action name="qaUserKick">
    <property name="text">
-    <string>&amp;Kick</string>
+    <string>&amp;Kick...</string>
    </property>
    <property name="toolTip">
     <string>Kick user (with reason)</string>
@@ -301,7 +305,7 @@
   </action>
   <action name="qaUserBan">
    <property name="text">
-    <string>&amp;Ban</string>
+    <string>&amp;Ban...</string>
    </property>
    <property name="toolTip">
     <string>Kick and ban user (with reason)</string>
@@ -340,7 +344,7 @@
   </action>
   <action name="qaUserLocalVolume">
    <property name="text">
-    <string>Local Volume Adjustment</string>
+    <string>Local Volume Adjustment...</string>
    </property>
    <property name="toolTip">
     <string>Locally adjust the user's speech volume.</string>
@@ -365,7 +369,7 @@
   </action>
   <action name="qaUserTextMessage">
    <property name="text">
-    <string>Send &amp;Message</string>
+    <string>Send &amp;Message...</string>
    </property>
    <property name="toolTip">
     <string>Send a Text Message</string>
@@ -376,7 +380,7 @@
   </action>
   <action name="qaChannelAdd">
    <property name="text">
-    <string>&amp;Add</string>
+    <string>&amp;Add...</string>
    </property>
    <property name="toolTip">
     <string>Add new channel</string>
@@ -387,7 +391,7 @@
   </action>
   <action name="qaChannelRemove">
    <property name="text">
-    <string>&amp;Remove</string>
+    <string>&amp;Remove...</string>
    </property>
    <property name="toolTip">
     <string>Remove channel</string>
@@ -398,7 +402,7 @@
   </action>
   <action name="qaChannelACL">
    <property name="text">
-    <string>&amp;Edit</string>
+    <string>&amp;Edit...</string>
    </property>
    <property name="toolTip">
     <string>Edit Groups and ACL for channel</string>
@@ -513,7 +517,7 @@
   </action>
   <action name="qaAudioStats">
    <property name="text">
-    <string>Audio S&amp;tatistics</string>
+    <string>Audio S&amp;tatistics...</string>
    </property>
    <property name="toolTip">
     <string>Display audio statistics</string>
@@ -539,7 +543,7 @@
      <normaloff>skin:config_basic.png</normaloff>skin:config_basic.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Settings</string>
+    <string>&amp;Settings...</string>
    </property>
    <property name="toolTip">
     <string>Configure Mumble</string>
@@ -585,7 +589,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaAudioWizard">
    <property name="text">
-    <string>&amp;Audio Wizard</string>
+    <string>&amp;Audio Wizard...</string>
    </property>
    <property name="toolTip">
     <string>Start the audio configuration wizard</string>
@@ -596,7 +600,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaDeveloperConsole">
    <property name="text">
-    <string>Developer &amp;Console</string>
+    <string>Developer &amp;Console...</string>
    </property>
    <property name="toolTip">
     <string>Show the Developer Console</string>
@@ -618,7 +622,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaHelpAbout">
    <property name="text">
-    <string>&amp;About</string>
+    <string>&amp;About...</string>
    </property>
    <property name="toolTip">
     <string>Information about Mumble</string>
@@ -632,7 +636,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaHelpAboutSpeex">
    <property name="text">
-    <string>About &amp;Speex</string>
+    <string>About &amp;Speex...</string>
    </property>
    <property name="toolTip">
     <string>Information about Speex</string>
@@ -646,7 +650,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaHelpAboutQt">
    <property name="text">
-    <string>About &amp;Qt</string>
+    <string>About &amp;Qt...</string>
    </property>
    <property name="toolTip">
     <string>Information about Qt</string>
@@ -671,7 +675,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaChannelSendMessage">
    <property name="text">
-    <string>Send &amp;Message</string>
+    <string>Send &amp;Message...</string>
    </property>
    <property name="toolTip">
     <string>Send a Text Message</string>
@@ -721,7 +725,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaConfigCert">
    <property name="text">
-    <string>&amp;Certificate Wizard</string>
+    <string>&amp;Certificate Wizard...</string>
    </property>
    <property name="toolTip">
     <string>Configure certificates for strong authentication</string>
@@ -732,7 +736,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaUserRegister">
    <property name="text">
-    <string>&amp;Register</string>
+    <string>&amp;Register...</string>
    </property>
    <property name="toolTip">
     <string>Register user on server</string>
@@ -776,7 +780,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaServerUserList">
    <property name="text">
-    <string>Registered &amp;Users</string>
+    <string>Registered &amp;Users...</string>
    </property>
    <property name="toolTip">
     <string>Edit registered users list</string>
@@ -787,7 +791,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaServerTexture">
    <property name="text">
-    <string>Change &amp;Avatar</string>
+    <string>Change &amp;Avatar...</string>
    </property>
    <property name="toolTip">
     <string>Change your avatar image on this server</string>
@@ -795,7 +799,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaServerTokens">
    <property name="text">
-    <string>&amp;Access Tokens</string>
+    <string>&amp;Access Tokens...</string>
    </property>
    <property name="toolTip">
     <string>Add or remove text-based access tokens</string>
@@ -811,7 +815,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaUserCommentReset">
    <property name="text">
-    <string>Reset &amp;Comment</string>
+    <string>Reset &amp;Comment...</string>
    </property>
    <property name="toolTip">
     <string>Reset the comment of the selected user.</string>
@@ -819,7 +823,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaUserTextureReset">
    <property name="text">
-    <string>Reset &amp;Avatar</string>
+    <string>Reset &amp;Avatar...</string>
    </property>
    <property name="toolTip">
     <string>Reset the avatar of the selected user.</string>
@@ -840,7 +844,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaUserCommentView">
    <property name="text">
-    <string>View Comment</string>
+    <string>View Comment...</string>
    </property>
    <property name="toolTip">
     <string>View comment in editor</string>
@@ -848,7 +852,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaUserInformation">
    <property name="text">
-    <string>&amp;Information</string>
+    <string>&amp;Information...</string>
    </property>
    <property name="toolTip">
     <string>Query server for connection information for user</string>
@@ -860,7 +864,7 @@ the channel's context menu.</string>
      <normaloff>skin:self_comment.svg</normaloff>skin:self_comment.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Change Comment</string>
+    <string>&amp;Change Comment...</string>
    </property>
    <property name="toolTip">
     <string>Change your own comment</string>
@@ -871,7 +875,7 @@ the channel's context menu.</string>
   </action>
   <action name="qaSelfRegister">
    <property name="text">
-    <string>R&amp;egister</string>
+    <string>R&amp;egister...</string>
    </property>
    <property name="toolTip">
     <string>Register yourself on the server</string>

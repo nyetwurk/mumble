@@ -46,8 +46,12 @@ static bool canRun64BitPrograms() {
 #endif
 }
 
-OverlayPrivateWin::OverlayPrivateWin(QObject *p) : OverlayPrivate(p) {
-	m_active = false;
+OverlayPrivateWin::OverlayPrivateWin(QObject *p)
+	: OverlayPrivate(p)
+	, m_helper_enabled(true)
+	, m_helper64_enabled(true)
+	, m_mumble_handle(0)
+	, m_active(false) {
 
 	// Acquire a handle to ourselves and duplicate it. We duplicate it because
 	// want it to be inheritable by our helper processes, and the handle returned
@@ -129,6 +133,18 @@ OverlayPrivateWin::~OverlayPrivateWin() {
 		qFatal("OverlayPrivateWin: unable to close Mumble process handle.");
 		return;
 	}
+
+	// Remove all signals, so they don't
+	// interfere with our calls to waitForFinished
+	// below.
+	m_helper_process->disconnect();
+	m_helper64_process->disconnect();
+
+	m_helper_process->terminate();
+	m_helper64_process->terminate();
+
+	m_helper_process->waitForFinished();
+	m_helper64_process->waitForFinished();
 }
 
 void OverlayPrivateWin::startHelper(QProcess *helper) {
@@ -192,6 +208,8 @@ static const char *processErrorString(QProcess::ProcessError processError) {
 			return "an error occurred when attempting to write to the process";
 		case QProcess::ReadError:
 			return "an error occurred when attempting to read from the process";
+		case QProcess::UnknownError:
+			return "an unknown error occurred";
 	}
 
 	return "unknown";

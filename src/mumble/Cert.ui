@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>Certificate Management</string>
   </property>
+  <property name="wizardStyle">
+   <enum>QWizard::ClassicStyle</enum>
+  </property>
   <widget class="QWizardPage" name="qwpWelcome">
    <property name="title">
     <string>Certificate Authentication</string>
@@ -27,11 +30,7 @@
     <item>
      <widget class="QLabel" name="qlIntroText">
       <property name="text">
-       <string>&lt;p&gt;Mumble can use certificates to authenticate with servers. Using certificates avoids passwords, meaning you don't need to disclose any password to the remote site. It also enables very easy user registration.&lt;/p&gt;&lt;p&gt;While Mumble can work without certificates, the majority of servers will expect you to have one.&lt;/p&gt;
-&lt;p&gt;
-It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://mumble.info/certificate.php&quot;&gt;create a trusted certificate&lt;/a&gt;.
-&lt;/p&gt;
-</string>
+       <string>&lt;p&gt;Mumble can use certificates to authenticate with servers. Using certificates avoids passwords, meaning you don't need to disclose any password to the remote site. It also enables very easy user registration and a client side friends list independent of servers.&lt;/p&gt;&lt;p&gt;While Mumble can work without certificates, the majority of servers will expect you to have one.&lt;/p&gt;&lt;p&gt;Creating a new certificate automatically is sufficient for most use cases. But Mumble also supports certificates representing trust in the users ownership of an email address. These certificates are issued by third parties. For more information see our &lt;a href=&quot;http://mumble.info/certificate.php&quot;&gt;user certificate documentation&lt;/a&gt;. &lt;/p&gt;</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -227,6 +226,24 @@ It is &lt;b&gt;strongly&lt;/b&gt; recommended that you &lt;a href=&quot;http://m
      </widget>
     </item>
     <item row="3" column="0" colspan="3">
+     <widget class="QLabel" name="qlPasswordNotice">
+      <property name="font">
+       <font>
+        <italic>true</italic>
+       </font>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:#ff0000;</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0" colspan="3">
      <widget class="CertView" name="cvImport">
       <property name="toolTip">
        <string>Certificate to import</string>

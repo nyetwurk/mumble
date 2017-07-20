@@ -33,9 +33,10 @@
 #include "ACL.h"
 #include "Message.h"
 #include "Mumble.pb.h"
-#include "Net.h"
 #include "User.h"
 #include "Timer.h"
+#include "HostAddress.h"
+#include "Ban.h"
 
 class BonjourServer;
 class Channel;
@@ -131,9 +132,19 @@ class Server : public QThread {
 		QVariant qvSuggestPositional;
 		QVariant qvSuggestPushToTalk;
 
-		QList<QSslCertificate> qlCA;
+		bool bUsingMetaCert;
 		QSslCertificate qscCert;
 		QSslKey qskKey;
+
+		/// qlIntermediates contains the certificates
+		/// from this virtual server's certificate PEM
+		// bundle that do not match the virtual server's
+		// private key.
+		///
+		/// Simply put: it contains any certificates
+		/// that aren't the main certificate, or "leaf"
+		/// certificate.
+		QList<QSslCertificate> qlIntermediates;
 #if defined(USE_QSSLDIFFIEHELLMANPARAMETERS)
 		QSslDiffieHellmanParameters qsdhpDHParams;
 #endif
@@ -169,6 +180,11 @@ class Server : public QThread {
 		// Certificate stuff, implemented partially in Cert.cpp
 	public:
 		static bool isKeyForCert(const QSslKey &key, const QSslCertificate &cert);
+		/// Attempt to load a private key in PEM format from |buf|.
+		/// If |passphrase| is non-empty, it will be used for decrypting the private key in |buf|.
+		/// If a valid RSA, DSA or EC key is found, it is returned.
+		/// If no valid private key is found, a null QSslKey is returned.
+		static QSslKey privateKeyFromPEM(const QByteArray &buf, const QByteArray &pass = QByteArray());
 		void initializeCert();
 		const QString getDigest() const;
 

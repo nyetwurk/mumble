@@ -368,10 +368,6 @@ void ASIOConfig::load(const Settings &r) {
 	qlwSpeaker->clear();
 }
 
-bool ASIOConfig::expert(bool) {
-	return false;
-}
-
 void ASIOConfig::clearQuery() {
 	bOk = false;
 	qlName->setText(QString());
@@ -443,7 +439,7 @@ ASIOInput::ASIOInput() {
 							lBufSize += granSize;
 					}
 				}
-				qWarning("ASIOInput: Buffer mismatch mode. Wanted %d, got %d", wantBuf, lBufSize);
+				qWarning("ASIOInput: Buffer mismatch mode. Wanted %li, got %li", wantBuf, lBufSize);
 			}
 
 

@@ -143,6 +143,7 @@ void AudioInputDialog::load(const Settings &r) {
 	// Idle auto actions
 	qsbIdle->setValue(r.iIdleTime / 60);
 	loadComboBox(qcbIdleAction, r.iaeIdleAction);
+	loadCheckBox(qcbUndoIdleAction, r.bUndoIdleActionUponActivity);
 
 	int echo = 0;
 	if (r.bEcho)
@@ -168,6 +169,7 @@ void AudioInputDialog::save() const {
 	// Idle auto actions
 	s.iIdleTime = qsbIdle->value() * 60;
 	s.iaeIdleAction = static_cast<Settings::IdleAction>(qcbIdleAction->currentIndex());
+	s.bUndoIdleActionUponActivity = qcbUndoIdleAction->isChecked();
 
 	s.bShowPTTButtonWindow = qcbPushWindow->isChecked();
 	s.bTxAudioCue = qcbPushClick->isChecked();
@@ -186,21 +188,6 @@ void AudioInputDialog::save() const {
 			air->setDeviceChoice(qcbDevice->itemData(idx), s);
 		}
 	}
-}
-
-bool AudioInputDialog::expert(bool b) {
-	qgbInterfaces->setVisible(b);
-	qgbAudio->setVisible(b);
-	qliFrames->setVisible(b);
-	qsFrames->setVisible(b);
-	qlFrames->setVisible(b);
-	qswTransmit->setVisible(b);
-	qliIdle->setVisible(b);
-	qsbIdle->setVisible(b);
-	qcbIdleAction->setVisible(b);
-	qlIdle->setVisible(b);
-	qlIdle2->setVisible(b);
-	return true;
 }
 
 void AudioInputDialog::on_qsFrames_valueChanged(int v) {
@@ -388,9 +375,9 @@ void AudioInputDialog::on_qcbSystem_currentIndexChanged(int) {
 
 void AudioInputDialog::on_Tick_timeout() {
 	AudioInputPtr ai = g.ai;
-	if (!ai || !ai->sppPreprocess) {
+
+	if (ai.get() == NULL || ! ai->sppPreprocess)
 		return;
-	}
 
 	abSpeech->iBelow = qsTransmitMin->value();
 	abSpeech->iAbove = qsTransmitMax->value();
@@ -412,6 +399,7 @@ void AudioInputDialog::on_qcbIdleAction_currentIndexChanged(int v) {
 	qlIdle->setEnabled(enabled);
 	qlIdle2->setEnabled(enabled);
 	qsbIdle->setEnabled(enabled);
+	qcbUndoIdleAction->setEnabled(enabled);
 }
 
 AudioOutputDialog::AudioOutputDialog(Settings &st) : ConfigWidget(st) {
@@ -512,10 +500,6 @@ void AudioOutputDialog::save() const {
 			aor->setDeviceChoice(qcbDevice->itemData(idx), s);
 		}
 	}
-}
-
-bool AudioOutputDialog::expert(bool b) {
-	return b;
 }
 
 void AudioOutputDialog::on_qcbSystem_currentIndexChanged(int) {

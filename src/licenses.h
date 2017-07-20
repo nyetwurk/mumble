@@ -99,9 +99,11 @@ static const char *authorsMumble =
 	"Antoine Bertin <diaoulael@users.sourceforge.net>\n"
 	"Anton Romanov <theli.ua@gmail.com>\n"
 	"Arie <allochtoon@zonnet.nl>\n"
+	"Arne Fenske <arne_fenske@Yahoo.de>\n"
 	"arrai <array.of.intellect@gmail.com>\n"
 	"Arseniy Lartsev <ars3niy@users.sourceforge.net>\n"
 	"Artem Vorotnikov <skybon@gmail.com>\n"
+	"Arthur Moore <Arthur.Moore.git@cd-net.net>\n"
 	"asmolero <alsamolero@gmail.com>\n"
 	"Asura Lee <ashurta@gmail.com>\n"
 	"B0nuse <mumble@mumble.ru>\n"
@@ -124,6 +126,7 @@ static const char *authorsMumble =
 	"Christopher Knadle <Chris.Knadle@coredump.us>\n"
 	"Cristian Gattamelati <cristian.gattamelati@gmail.com>\n"
 	"d-rez <dark.skeleton@gmail.com>\n"
+	"Davide Beatrici <davidebeatrici@gmail.com>\n"
 	"Davide Beatrici <https://github.com/davidebeatrici>\n"
 	"davidebeatrici <davidebeatrici@gmail.com>\n"
 	"dc6jgk <github.filter@gkware.com>\n"
@@ -160,8 +163,9 @@ static const char *authorsMumble =
 	"Jakob Dettner <jakobdettner@users.sourceforge.net>\n"
 	"James Fraser <fwaggle@fwaggle.org>\n"
 	"Jan Braun <janbraun@gmx.net>\n"
-	"Jan Klass <kissaki@gmx.de>\n"
+	"Jan Klass <kissaki@posteo.de>\n"
 	"javitonino <javitonino@users.sourceforge.net>\n"
+	"Jeff Rogers <jeff@flyzipline.com>\n"
 	"Jérôme \"buggerone\" <buggerone@users.sourceforge.net>\n"
 	"Jerome Vidal <jerhum@users.sourceforge.net>\n"
 	"jgeboski <jgeboski@gmail.com>\n"
@@ -180,14 +184,15 @@ static const char *authorsMumble =
 	"karokatona <karokatona@users.sourceforge.net>\n"
 	"Kevin Rohland <kevin@nascher.org>\n"
 	"Kevin Strasser <kevstras@gmail.com>\n"
-	"Kissaki <kissaki@gmx.de>\n"
 	"Kjetil Jørgensen <kjetijor@users.sourceforge.net>\n"
 	"Kyle Smith <askreet@gmail.com>\n"
+	"Lari Tikkanen <lartza@outlook.com>\n"
 	"Lartza <https://github.com/Lartza>\n"
 	"Lekensteyn <lekensteyn@users.sourceforge.net>\n"
 	"Leszek Godlewski <inequation@users.sourceforge.net>\n"
 	"Ludwig Nussel <ludwig.nussel@suse.de>\n"
 	"Lukas Orsvärn <lucas.orsv@gmail.com>\n"
+	"Luke A Pitt <LukeAPitt@googlemail.com>\n"
 	"main() <main@ehvag.eu.org>\n"
 	"Marc Deslauriers <marc.deslauriers@canonical.com>\n"
 	"Marius Grannæs <grannas@users.sourceforge.net>\n"
@@ -201,6 +206,7 @@ static const char *authorsMumble =
 	"Matt Hamilton <m@tthamilton.com>\n"
 	"Matt Lewandowsky <matt@greenviolet.net>\n"
 	"Matt M. <mokomull@users.sourceforge.net>\n"
+	"Matthias Mailänder <matthias@mailaender.name>\n"
 	"Matthias Salzeder <mail@MatthiasSalzeder.de>\n"
 	"Matthias Vogelgesang <matthias.vogelgesang@gmail.com>\n"
 	"meanracoon <racoon@meanclan.org>\n"
@@ -269,6 +275,7 @@ static const char *authorsMumble =
 	"withgod <withgod@users.sourceforge.net>\n"
 	"x89 <napalm10@gmail.com>\n"
 	"zapman\n"
+	"zeroX-tj <tim.janssens@gmail.com>\n"
 	"Zorg <zorgiepoo@gmail.com>\n"
 	"\n"
 	"// Special thanks to:\n"
@@ -1162,13 +1169,6 @@ static const char *licenseOldStyleLicenseHeaders =
 	"	Copyright (C) 2005-2011, Thorvald Natvig <thorvald@natvig.com>\n"
 	"	Copyright (C) 2008, Andreas Messer <andi@bupfen.de>\n"
 	"\n"
-	"Support for GKey in Mumble\n"
-	"\n"
-	"	src/mumble/GKey.cpp\n"
-	"	src/mumble/GKey.h\n"
-	"\n"
-	"	Copyright (C) 2015, Jordan J Klassen <forivall@gmail.com>\n"
-	"\n"
 	"Mumble's PortAudio support\n"
 	"\n"
 	"	src/mumble/PAAudio.cpp, src/mumble/PAAudio.h\n"
@@ -1354,6 +1354,22 @@ static const char *licenseOldStyleLicenseHeaders =
 	"SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.";
 
 
+static const char *licenseArc4RandomUniform = 
+	"Copyright (c) 2008, Damien Miller <djm@openbsd.org>\n"
+	"\n"
+	"Permission to use, copy, modify, and distribute this software for any\n"
+	"purpose with or without fee is hereby granted, provided that the above\n"
+	"copyright notice and this permission notice appear in all copies.\n"
+	"\n"
+	"THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n"
+	"WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n"
+	"MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR\n"
+	"ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n"
+	"WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n"
+	"ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF\n"
+	"OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.";
+
+
 static const ThirdPartyLicense licenses3rdParties[] = {
 	ThirdPartyLicense("CELT", "http://www.celt-codec.org/", licenseCELT),
 	ThirdPartyLicense("Opus", "http://www.opus-codec.org/", licenseOpus),
@@ -1378,6 +1394,7 @@ static const ThirdPartyLicense licenses3rdParties[] = {
 	ThirdPartyLicense("QQBonjour", "https://doc.qt.io/archives/qq/qq23-bonjour.html", licenseQQBonjour),
 	ThirdPartyLicense("smallft", "https://www.xiph.org", licenseSmallFT),
 	ThirdPartyLicense("Old-style Mumble license headers", "https://www.mumble.info", licenseOldStyleLicenseHeaders),
+	ThirdPartyLicense("arc4random_uniform", "https://www.openbsd.org", licenseArc4RandomUniform),
 	ThirdPartyLicense(),
 };
 

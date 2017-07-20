@@ -4,7 +4,8 @@
 # Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 include(../mumble.pri)
-include(../../python.pri)
+include(../../qmake/python.pri)
+include(../../qmake/lrelease.pri)
 
 DEFINES		*= MUMBLE
 TEMPLATE	= app
@@ -63,6 +64,14 @@ CONFIG(static) {
 QT		*= network sql xml svg
 isEqual(QT_MAJOR_VERSION, 5) {
   QT *= widgets
+
+  CONFIG(qtspeech) {
+    qtHaveModule(texttospeech) {
+      QT *= texttospeech
+    } else {
+      error("You enabled the 'qtspeech' CONFIG option, but the required 'texttospeech' module is not available on your system!")
+    }
+  }
 }
 
 HEADERS *= BanEditor.h \
@@ -129,7 +138,9 @@ HEADERS *= BanEditor.h \
     Themes.h \
     OverlayPositionableItem.h \
     widgets/MUComboBox.h \
-    DeveloperConsole.h
+    DeveloperConsole.h \
+    PathListWidget.h \
+    XMLTools.h
 
 SOURCES *= BanEditor.cpp \
     ACLEditor.cpp \
@@ -195,7 +206,13 @@ SOURCES *= BanEditor.cpp \
     Themes.cpp \
     OverlayPositionableItem.cpp \
     widgets/MUComboBox.cpp \
-    DeveloperConsole.cpp
+    DeveloperConsole.cpp \
+    PathListWidget.cpp \
+    XMLTools.cpp
+
+CONFIG(qtspeech) {
+  SOURCES *= TextToSpeech.cpp
+}
 
 DIST		*= ../../icons/mumble.ico ../../icons/mumble.xpm murmur_pch.h mumble.plist
 RESOURCES	*= mumble.qrc mumble_translations.qrc ../../themes/MumbleTheme.qrc
@@ -251,16 +268,6 @@ CONFIG(static) {
   macx {
     QMAKE_LFLAGS -= -Wl,-dead_strip
     QMAKE_LFLAGS += -Wl,-all_load
-  }
-}
-
-isEmpty(QMAKE_LRELEASE) {
-  QMAKE_QMAKE_BASE = $$basename(QMAKE_QMAKE)
-  QMAKE_LRELEASE_PATH = $$dirname(QMAKE_QMAKE)/$$replace(QMAKE_QMAKE_BASE,qmake,lrelease)
-  isEqual(QT_MAJOR_VERSION, 5) {
-    QMAKE_LRELEASE = $$shell_path($$QMAKE_LRELEASE_PATH)
-  } else {
-    QMAKE_LRELEASE = $$QMAKE_LRELEASE_PATH
   }
 }
 
@@ -367,9 +374,19 @@ win32 {
     RC_FILE = mumble.rc
   }
   HEADERS	*= GlobalShortcut_win.h Overlay_win.h TaskList.h UserLockFile.h
-  SOURCES	*= GlobalShortcut_win.cpp TextToSpeech_win.cpp Overlay_win.cpp SharedMemory_win.cpp Log_win.cpp os_win.cpp TaskList.cpp ../../overlay/ods.cpp UserLockFile_win.cpp
+  SOURCES	*= GlobalShortcut_win.cpp Overlay_win.cpp SharedMemory_win.cpp Log_win.cpp os_win.cpp TaskList.cpp WinGUIDs.cpp ../../overlay/ods.cpp UserLockFile_win.cpp
+
+  !CONFIG(qtspeech) {
+    SOURCES *= TextToSpeech_win.cpp
+  }
+
   LIBS		*= -ldxguid -ldinput8 -lsapi -lole32 -lws2_32 -ladvapi32 -lwintrust -ldbghelp -lshell32 -lshlwapi -luser32 -lgdi32 -lpsapi
-  LIBS		*= -logg -lvorbis -lvorbisfile -lFLAC -lsndfile
+  win32-g++ {
+    LIBS *= -lsndfile -lvorbis -lvorbisfile -lvorbisenc -logg -lFLAC
+  }
+  win32-msvc* {
+    LIBS *= -lsndfile -lvorbis -lvorbisfile -logg -lFLAC
+  }
   LIBS		*= -ldelayimp -delayload:shell32.dll
 
   DEFINES	*= WIN32
@@ -411,7 +428,9 @@ win32 {
         QMAKE_LFLAGS *= /MANIFESTUAC:\"level=\'asInvoker\' uiAccess=\'true\'\"
       }
     }
-    QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)$$quote(mt.exe -nologo -updateresource:$(DESTDIR_TARGET);1 -manifest mumble.appcompat.manifest)
+    win32-msvc* {
+      QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)$$quote(mt.exe -nologo -updateresource:$(DESTDIR_TARGET);1 -manifest mumble.appcompat.manifest)
+    }
   }
 }
 
@@ -449,7 +468,11 @@ unix {
 
     HEADERS *= GlobalShortcut_macx.h AppNap.h
     SOURCES *= SharedMemory_unix.cpp
-    OBJECTIVE_SOURCES *= TextToSpeech_macx.mm GlobalShortcut_macx.mm os_macx.mm Log_macx.mm AppNap.mm
+    OBJECTIVE_SOURCES *= GlobalShortcut_macx.mm os_macx.mm Log_macx.mm AppNap.mm
+
+    !CONFIG(qtspeech) {
+      OBJECTIVE_SOURCES *= TextToSpeech_macx.mm
+    }
 
     !CONFIG(universal) {
       # Link against libxar so we can inspect Mac OS X installer packages.
@@ -471,17 +494,17 @@ unix {
     HEADERS += CoreAudio.h
   } else {
     HEADERS *= GlobalShortcut_unix.h
-    SOURCES *= os_unix.cpp GlobalShortcut_unix.cpp TextToSpeech_unix.cpp Overlay_unix.cpp SharedMemory_unix.cpp Log_unix.cpp
+    SOURCES *= os_unix.cpp GlobalShortcut_unix.cpp Overlay_unix.cpp SharedMemory_unix.cpp Log_unix.cpp
+    
+    !CONFIG(qtspeech) {
+      SOURCES *= TextToSpeech_unix.cpp
+    }
+    
     must_pkgconfig(x11)
     linux* {
       LIBS *= -lrt
     }
     LIBS *= -lXi
-
-    # For MumbleSSL::qsslSanityCheck()
-    contains(UNAME, Linux) {
-      LIBS *= -ldl
-    }
 
     !CONFIG(no-oss) {
       CONFIG  *= oss
@@ -532,7 +555,14 @@ asio {
 	HEADERS *= ASIOInput.h
 	SOURCES	*= ASIOInput.cpp
 	FORMS *= ASIOInput.ui
-	INCLUDEPATH *= "$$ASIO_PATH/common" "$$ASIO_PATH/host" "$$ASIO_PATH/host/pc"
+
+	# If 3rdparty/asio exists, use that...
+	exists(../../3rdparty/asio) {
+		INCLUDEPATH *= ../../3rdparty/asio/common ../../3rdparty/asio/host ../../3rdparty/asio/host/pc
+	# Otherwise, fall back to the path from winpaths_*.pri.
+	} else {
+		INCLUDEPATH *= "$$ASIO_PATH/common" "$$ASIO_PATH/host" "$$ASIO_PATH/host/pc"
+	}
 }
 
 bonjour {
@@ -585,13 +615,19 @@ directsound {
 	HEADERS	*= DirectSound.h
 	SOURCES	*= DirectSound.cpp
 	LIBS	*= -ldsound
+	win32-g++ {
+		LIBS *= -lksuser
+	}
 }
 
 wasapi {
 	DEFINES *= USE_WASAPI
 	HEADERS	*= WASAPI.h WASAPINotificationClient.h
 	SOURCES	*= WASAPI.cpp WASAPINotificationClient.cpp
-	LIBS	*= -lAVRT -delayload:AVRT.DLL
+	LIBS	*= -lavrt -delayload:avrt.DLL
+	win32-g++ {
+		LIBS *= -lboost_system-mt
+	}
 }
 
 g15 {
@@ -643,9 +679,6 @@ CONFIG(no-update) {
 		}
 	}
 	GENQRC = $$PYTHON ../../scripts/generate-mumble_qt-qrc.py
-	win32 {
-		GENQRC = $$PYTHON ..\\..\\scripts\\generate-mumble_qt-qrc.py
-	}
 	!system($$GENQRC mumble_qt_auto.qrc $$[QT_INSTALL_TRANSLATIONS] $$QT_TRANSLATIONS_FALLBACK_DIR) {
 		error(Failed to run generate-mumble_qt-qrc.py script)
 	}
@@ -658,6 +691,11 @@ CONFIG(no-update) {
 
 CONFIG(static_qt_plugins) {
   DEFINES += USE_STATIC_QT_PLUGINS
+  
+  # If QSQLite is a plugin we need to import it in order to use the database
+  exists($$[QT_INSTALL_PLUGINS]/sqldrivers/*qsqlite*) {
+      QTPLUGIN += qsqlite
+  }
 
   # Since Qt 5.3, qt.prf will automatically populate QT_PLUGINS for static builds
   # for TEMPLATE=app.
@@ -703,4 +741,4 @@ lrel.variable_out = rcc.depends
 
 QMAKE_EXTRA_COMPILERS *= lrel
 
-include(../../symbols.pri)
+include(../../qmake/symbols.pri)

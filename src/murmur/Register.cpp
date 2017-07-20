@@ -89,7 +89,7 @@ void Server::update() {
 		tag.appendChild(t);
 	}
 
-	QNetworkRequest qnr(QUrl(QLatin1String("https://mumble.hive.no/register.cgi")));
+	QNetworkRequest qnr(QUrl(QLatin1String("https://mumble.info/register.cgi")));
 	qnr.setHeader(QNetworkRequest::ContentTypeHeader, QLatin1String("text/xml"));
 
 	QSslConfiguration ssl = qnr.sslConfiguration();
@@ -99,8 +99,12 @@ void Server::update() {
 	/* Work around bug in QSslConfiguration */
 	QList<QSslCertificate> calist = ssl.caCertificates();
 	calist << QSslSocket::defaultCaCertificates();
+	calist << Meta::mp.qlCA;
+	calist << Meta::mp.qlIntermediates;
 	calist << qscCert;
 	ssl.setCaCertificates(calist);
+
+	ssl.setCiphers(Meta::mp.qlCiphers);
 
 	qnr.setSslConfiguration(ssl);
 

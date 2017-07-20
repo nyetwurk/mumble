@@ -18,6 +18,7 @@
 #include "SSL.h"
 #include "License.h"
 #include "LogEmitter.h"
+#include "EnvUtils.h"
 
 #ifdef Q_OS_UNIX
 #include "UnixMurmur.h"
@@ -186,7 +187,7 @@ int main(int argc, char **argv) {
 	a.setWindowIcon(icon);
 #else
 #ifndef Q_OS_MAC
-	setenv("AVAHI_COMPAT_NOWARN", "1", 1);
+	EnvUtils::setenv(QLatin1String("AVAHI_COMPAT_NOWARN"), QLatin1String("1"));
 #endif
 	QCoreApplication a(argc, argv);
 	UnixMurmur unixhandler;
@@ -205,16 +206,18 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef Q_OS_WIN
+	// By default, windbus expects the path to dbus-daemon to be in PATH, and the path
+	// should contain bin\\, and the path to the config is hardcoded as ..\etc
+
 	{
-		size_t reqSize;
-		_wgetenv_s(&reqSize, NULL, 0, L"PATH");
-		if (reqSize > 0) {
-			STACKVAR(wchar_t, buff, reqSize+1);
-			_wgetenv_s(&reqSize, buff, reqSize, L"PATH");
-			QString path = QString::fromLatin1("%1;%2").arg(QDir::toNativeSeparators(a.applicationDirPath())).arg(QString::fromWCharArray(buff));
-			STACKVAR(wchar_t, buffout, path.length() + 1);
-			path.toWCharArray(buffout);
-			_wputenv_s(L"PATH", buffout);
+		QString path = EnvUtils::getenv(QLatin1String("PATH"));
+		if (path.isEmpty()) {
+			qWarning() << "Failed to get PATH. Not adding application directory to PATH. DBus bindings may not work.";
+		} else {
+			QString newPath = QString::fromLatin1("%1;%2").arg(QDir::toNativeSeparators(a.applicationDirPath())).arg(path);
+			if (!EnvUtils::setenv(QLatin1String("PATH"), newPath)) {
+				qWarning() << "Failed to set PATH. DBus bindings may not work.";
+			}
 		}
 	}
 #endif
@@ -349,6 +352,7 @@ int main(int argc, char **argv) {
 			       "default locations.", qPrintable(args.at(0)));
 #ifdef Q_OS_UNIX
 		} else if (arg == "-limits") {
+			detach = false;
 			Meta::mp.read(inifile);
 			unixhandler.setuid();
 			unixhandler.finalcap();
@@ -362,6 +366,12 @@ int main(int argc, char **argv) {
 			detach = false;
 			qFatal("Password arguments must be last.");
 		}
+	}
+
+	if (QSslSocket::supportsSsl()) {
+		qWarning("SSL: OpenSSL version is '%s'", SSLeay_version(SSLEAY_VERSION));
+	} else {
+		qFatal("SSL: this version of Murmur is built against Qt without SSL Support. Aborting.");
 	}
 
 #ifdef Q_OS_UNIX
@@ -510,32 +520,33 @@ int main(int argc, char **argv) {
 
 	if (! Meta::mp.qsDBus.isEmpty()) {
 		if (Meta::mp.qsDBus == "session")
-			MurmurDBus::qdbc = QDBusConnection::sessionBus();
+			MurmurDBus::qdbc = new QDBusConnection(QDBusConnection::sessionBus());
 		else if (Meta::mp.qsDBus == "system")
-			MurmurDBus::qdbc = QDBusConnection::systemBus();
+			MurmurDBus::qdbc = new QDBusConnection(QDBusConnection::systemBus());
 		else {
 			// QtDBus is not quite finished yet.
 			qWarning("Warning: Peer-to-peer session support is currently nonworking.");
-			MurmurDBus::qdbc = QDBusConnection::connectToBus(Meta::mp.qsDBus, "mainbus");
-			if (! MurmurDBus::qdbc.isConnected()) {
+			MurmurDBus::qdbc = new QDBusConnection(QDBusConnection::connectToBus(Meta::mp.qsDBus, "mainbus"));
+			if (! MurmurDBus::qdbc->isConnected()) {
 				QDBusServer *qdbs = new QDBusServer(Meta::mp.qsDBus, &a);
 				qWarning("%s",qPrintable(qdbs->lastError().name()));
 				qWarning("%d",qdbs->isConnected());
 				qWarning("%s",qPrintable(qdbs->address()));
-				MurmurDBus::qdbc = QDBusConnection::connectToBus(Meta::mp.qsDBus, "mainbus");
+				MurmurDBus::qdbc = new QDBusConnection(QDBusConnection::connectToBus(Meta::mp.qsDBus, "mainbus"));
 			}
 		}
-		if (! MurmurDBus::qdbc.isConnected()) {
+		if (! MurmurDBus::qdbc->isConnected()) {
 			qWarning("Failed to connect to D-Bus %s",qPrintable(Meta::mp.qsDBus));
-		}
-	}
-	new MetaDBus(meta);
-	if (MurmurDBus::qdbc.isConnected()) {
-		if (! MurmurDBus::qdbc.registerObject("/", meta) || ! MurmurDBus::qdbc.registerService(Meta::mp.qsDBusService)) {
-			QDBusError e=MurmurDBus::qdbc.lastError();
-			qWarning("Failed to register on DBus: %s %s", qPrintable(e.name()), qPrintable(e.message()));
 		} else {
-			qWarning("DBus registration succeeded");
+			new MetaDBus(meta);
+			if (MurmurDBus::qdbc->isConnected()) {
+				if (! MurmurDBus::qdbc->registerObject("/", meta) || ! MurmurDBus::qdbc->registerService(Meta::mp.qsDBusService)) {
+					QDBusError e=MurmurDBus::qdbc->lastError();
+					qWarning("Failed to register on DBus: %s %s", qPrintable(e.name()), qPrintable(e.message()));
+				} else {
+					qWarning("DBus registration succeeded");
+				}
+			}
 		}
 	}
 #endif
@@ -565,6 +576,11 @@ int main(int argc, char **argv) {
 	meta->killAll();
 
 	qWarning("Shutting down");
+
+#ifdef USE_DBUS
+	delete MurmurDBus::qdbc;
+	MurmurDBus::qdbc = NULL;
+#endif
 
 #ifdef USE_ICE
 	IceStop();

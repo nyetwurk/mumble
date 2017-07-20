@@ -38,6 +38,7 @@
 #include "Themes.h"
 #include "UserLockFile.h"
 #include "License.h"
+#include "EnvUtils.h"
 
 #if defined(USE_STATIC_QT_PLUGINS) && QT_VERSION < 0x050000
 Q_IMPORT_PLUGIN(qtaccessiblewidgets)
@@ -60,8 +61,13 @@ namespace boost {
 extern void os_init();
 extern char *os_lang;
 
+#ifdef Q_OS_WIN
+// from os_win.cpp
+extern HWND mumble_mw_hwnd;
+#endif // Q_OS_WIN
+
 #if defined(Q_OS_WIN) && !defined(QT_NO_DEBUG)
-extern "C" _declspec(dllexport) int main(int argc, char **argv) {
+extern "C" __declspec(dllexport) int main(int argc, char **argv) {
 #else
 int main(int argc, char **argv) {
 #endif
@@ -73,7 +79,7 @@ int main(int argc, char **argv) {
 	SetDllDirectory(L"");
 #else
 #ifndef Q_OS_MAC
-	setenv("AVAHI_COMPAT_NOWARN", "1", 1);
+	EnvUtils::setenv(QLatin1String("AVAHI_COMPAT_NOWARN"), QLatin1String("1"));
 #endif
 #endif
 
@@ -98,7 +104,7 @@ int main(int argc, char **argv) {
 	{
 		QDir d(a.applicationVersionRootPath());
 		QString helper = d.absoluteFilePath(QString::fromLatin1("sbcelt-helper"));
-		setenv("SBCELT_HELPER_BINARY", helper.toUtf8().constData(), 1);
+		EnvUtils::setenv(QLatin1String("SBCELT_HELPER_BINARY"), helper.toUtf8().constData());
 	}
 #endif
 
@@ -170,7 +176,7 @@ int main(int argc, char **argv) {
 					"  undeaf\n"
 					"                Undeafen self\n"
 					"  toggledeaf\n"
-					"                Toggle self-deafen stauts\n"
+					"                Toggle self-deafen status\n"
 					"\n"
 				);
 
@@ -236,14 +242,20 @@ int main(int argc, char **argv) {
 
 	{
 		size_t reqSize;
-		_wgetenv_s(&reqSize, NULL, 0, L"PATH");
-		if (reqSize > 0) {
+		if (_wgetenv_s(&reqSize, NULL, 0, L"PATH") != 0)) {
+			qWarning() << "Failed to get PATH. Not adding application directory to PATH. DBus bindings may not work.";
+		} else if (reqSize > 0) {
 			STACKVAR(wchar_t, buff, reqSize+1);
-			_wgetenv_s(&reqSize, buff, reqSize, L"PATH");
-			QString path = QString::fromLatin1("%1;%2").arg(QDir::toNativeSeparators(MumbleApplication::instance()->applicationVersionRootPath())).arg(QString::fromWCharArray(buff));
-			STACKVAR(wchar_t, buffout, path.length() + 1);
-			path.toWCharArray(buffout);
-			_wputenv_s(L"PATH", buffout);
+			if (_wgetenv_s(&reqSize, buff, reqSize, L"PATH") != 0) {
+				qWarning() << "Failed to get PATH. Not adding application directory to PATH. DBus bindings may not work.";
+			} else {
+				QString path = QString::fromLatin1("%1;%2").arg(QDir::toNativeSeparators(MumbleApplication::instance()->applicationVersionRootPath())).arg(QString::fromWCharArray(buff));
+				STACKVAR(wchar_t, buffout, path.length() + 1);
+				path.toWCharArray(buffout);
+				if (_wputenv_s(L"PATH", buffout) != 0) {
+					qWarning() << "Failed to set PATH. DBus bindings may not work.";
+				}
+			}
 		}
 	}
 #endif
@@ -417,7 +429,6 @@ int main(int argc, char **argv) {
 #ifdef Q_OS_WIN
 	// Set mumble_mw_hwnd in os_win.cpp.
 	// Used by APIs in ASIOInput, DirectSound and GlobalShortcut_win that require a HWND.
-	extern HWND mumble_mw_hwnd;
 	mumble_mw_hwnd = GetForegroundWindow();
 #endif
 
@@ -589,6 +600,9 @@ int main(int argc, char **argv) {
 	// correctly.
 	userLockFile.release();
 #endif
+
+	// Tear down OpenSSL state.
+	MumbleSSL::destroy();
 	
 	// At this point termination of our process is immenent. We can safely
 	// launch another version of Mumble. The reason we do an actual
@@ -641,7 +655,7 @@ int main(int argc, char **argv) {
 #if defined(Q_OS_WIN) && defined(QT_NO_DEBUG)
 extern void qWinMain(HINSTANCE, HINSTANCE, LPSTR, int, int &, QVector<char *> &);
 
-extern "C" _declspec(dllexport) int MumbleMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdArg, int cmdShow) {
+extern "C" __declspec(dllexport) int MumbleMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdArg, int cmdShow) {
 	Q_UNUSED(cmdArg);
 
 	QByteArray cmdParam = QString::fromWCharArray(GetCommandLine()).toLocal8Bit();

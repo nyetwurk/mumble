@@ -22,6 +22,9 @@
 #include "SSL.h"
 #include "User.h"
 #include "Net.h"
+#include "HostAddress.h"
+#include "ServerResolver.h"
+#include "ServerResolverRecord.h"
 
 ServerHandlerMessageEvent::ServerHandlerMessageEvent(const QByteArray &msg, unsigned int mtype, bool flush) : QEvent(static_cast<QEvent::Type>(SERVERSEND_EVENT)) {
 	qbaMsg = msg;
@@ -35,6 +38,8 @@ static HANDLE loadQoS() {
 
 	HRESULT hr = E_FAIL;
 
+// We don't support delay-loading QoS on MinGW. Only enable it for MSVC.
+#ifdef _MSC_VER
 	__try {
 		hr = __HrLoadAllImportsForDll("qwave.dll");
 	}
@@ -42,6 +47,7 @@ static HANDLE loadQoS() {
 	__except(EXCEPTION_EXECUTE_HANDLER) {
 		hr = E_FAIL;
 	}
+#endif
 
 	if (! SUCCEEDED(hr)) {
 		qWarning("ServerHandler: Failed to load qWave.dll, no QoS available");
@@ -252,92 +258,144 @@ void ServerHandler::sendProtoMessage(const ::google::protobuf::Message &msg, uns
 	}
 }
 
-void ServerHandler::run() {
-	qbaDigest = QByteArray();
-	bStrong = true;
-	QSslSocket *qtsSock = new QSslSocket(this);
+void ServerHandler::hostnameResolved() {
+	ServerResolver *sr = qobject_cast<ServerResolver *>(QObject::sender());
+	QList<ServerResolverRecord> records = sr->records();
 
-	if (! g.s.bSuppressIdentity && CertWizard::validateCert(g.s.kpCertificate)) {
-		qtsSock->setPrivateKey(g.s.kpCertificate.second);
-		qtsSock->setLocalCertificate(g.s.kpCertificate.first.at(0));
-		QList<QSslCertificate> certs = qtsSock->caCertificates();
-		certs << g.s.kpCertificate.first;
-		qtsSock->setCaCertificates(certs);
+	// Exit the ServerHandler thread's event loop with an
+	// error code in case our hostname lookup failed.
+	if (records.isEmpty()) {
+		exit(-1);
+		return;
 	}
 
-	{
-		ConnectionPtr connection(new Connection(this, qtsSock));
-		cConnection = connection;
-
-		qlErrors.clear();
-		qscCert.clear();
-
-		connect(qtsSock, SIGNAL(encrypted()), this, SLOT(serverConnectionConnected()));
-		connect(qtsSock, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(serverConnectionStateChanged(QAbstractSocket::SocketState)));
-		connect(connection.get(), SIGNAL(connectionClosed(QAbstractSocket::SocketError, const QString &)), this, SLOT(serverConnectionClosed(QAbstractSocket::SocketError, const QString &)));
-		connect(connection.get(), SIGNAL(message(unsigned int, const QByteArray &)), this, SLOT(message(unsigned int, const QByteArray &)));
-		connect(connection.get(), SIGNAL(handleSslErrors(const QList<QSslError> &)), this, SLOT(setSslErrors(const QList<QSslError> &)));
-	}
-	bUdp = false;
-
-
-#if QT_VERSION >= 0x050500
-	qtsSock->setProtocol(QSsl::TlsV1_0OrLater);
-#elif QT_VERSION >= 0x050400
-	// In Qt 5.4, QSsl::SecureProtocols is equivalent
-	// to "TLSv1.0 or later", which we require.
-	qtsSock->setProtocol(QSsl::SecureProtocols);
-#elif QT_VERSION >= 0x050000
-	qtsSock->setProtocol(QSsl::TlsV1_0);
-#else
-	qtsSock->setProtocol(QSsl::TlsV1);
-#endif
-	qtsSock->connectToHostEncrypted(qsHostName, usPort);
-
-	tTimestamp.restart();
-
-	// Setup ping timer;
-	QTimer *ticker = new QTimer(this);
-	connect(ticker, SIGNAL(timeout()), this, SLOT(sendPing()));
-	ticker->start(5000);
-
-	g.mw->rtLast = MumbleProto::Reject_RejectType_None;
-
-	accUDP = accTCP = accClean;
-
-	uiVersion = 0;
-	qsRelease = QString();
-	qsOS = QString();
-	qsOSVersion = QString();
-
-	exec();
-
-	if (qusUdp) {
-		QMutexLocker qml(&qmUdp);
-
-#ifdef Q_OS_WIN
-		if (hQoS != NULL) {
-			if (! QOSRemoveSocketFromFlow(hQoS, 0, dwFlowUDP, 0))
-				qWarning("ServerHandler: Failed to remove UDP from QoS");
-			dwFlowUDP = 0;
+	// Create the list of target host:port pairs
+	// that the ServerHandler should try to connect to.
+	QList<ServerAddress> ql;
+	foreach (ServerResolverRecord record, records) {
+		foreach (HostAddress addr, record.addresses()) {
+			ql.append(ServerAddress(addr, record.port()));
 		}
-#endif
-		delete qusUdp;
-		qusUdp = NULL;
+	}
+	qlAddresses = ql;
+
+	// Exit the event loop with 'success' status code,
+	// to continue connecting to the server.
+	exit(0);
+}
+
+void ServerHandler::run() {
+	// Resolve the hostname...
+	{
+		ServerResolver sr;
+		QObject::connect(&sr, SIGNAL(resolved()), this, SLOT(hostnameResolved()));
+		sr.resolve(qsHostName, usPort);
+		int ret = exec();
+		if (ret < 0) {
+			qWarning("ServerHandler: failed to resolve hostname");
+			return;
+		}
 	}
 
-	ticker->stop();
+	QList<ServerAddress> targetAddresses(qlAddresses);
+	bool shouldTryNextTargetServer = true;
+	do {
+		saTargetServer = qlAddresses.takeFirst();
 
-	ConnectionPtr cptr(cConnection);
-	if (cptr) {
-		cptr->disconnectSocket(true);
-	}
+		tConnectionTimeoutTimer = NULL;
+		qbaDigest = QByteArray();
+		bStrong = true;
+		qtsSock = new QSslSocket(this);
+		qtsSock->setPeerVerifyName(qsHostName);
 
-	cConnection.reset();
-	while (! cptr.unique()) {
-		msleep(100);
-	}
-	delete qtsSock;
+		if (! g.s.bSuppressIdentity && CertWizard::validateCert(g.s.kpCertificate)) {
+			qtsSock->setPrivateKey(g.s.kpCertificate.second);
+			qtsSock->setLocalCertificate(g.s.kpCertificate.first.at(0));
+			QList<QSslCertificate> certs = qtsSock->caCertificates();
+			certs << g.s.kpCertificate.first;
+			qtsSock->setCaCertificates(certs);
+		}
+
+		{
+			ConnectionPtr connection(new Connection(this, qtsSock));
+			cConnection = connection;
+
+			qlErrors.clear();
+			qscCert.clear();
+
+			connect(qtsSock, SIGNAL(encrypted()), this, SLOT(serverConnectionConnected()));
+			connect(qtsSock, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(serverConnectionStateChanged(QAbstractSocket::SocketState)));
+			connect(connection.get(), SIGNAL(connectionClosed(QAbstractSocket::SocketError, const QString &)), this, SLOT(serverConnectionClosed(QAbstractSocket::SocketError, const QString &)));
+			connect(connection.get(), SIGNAL(message(unsigned int, const QByteArray &)), this, SLOT(message(unsigned int, const QByteArray &)));
+			connect(connection.get(), SIGNAL(handleSslErrors(const QList<QSslError> &)), this, SLOT(setSslErrors(const QList<QSslError> &)));
+		}
+		bUdp = false;
+
+
+	#if QT_VERSION >= 0x050500
+		qtsSock->setProtocol(QSsl::TlsV1_0OrLater);
+	#elif QT_VERSION >= 0x050400
+		// In Qt 5.4, QSsl::SecureProtocols is equivalent
+		// to "TLSv1.0 or later", which we require.
+		qtsSock->setProtocol(QSsl::SecureProtocols);
+	#elif QT_VERSION >= 0x050000
+		qtsSock->setProtocol(QSsl::TlsV1_0);
+	#else
+		qtsSock->setProtocol(QSsl::TlsV1);
+	#endif
+		qtsSock->connectToHost(saTargetServer.host.toAddress(), saTargetServer.port);
+
+		tTimestamp.restart();
+
+		// Setup ping timer;
+		QTimer *ticker = new QTimer(this);
+		connect(ticker, SIGNAL(timeout()), this, SLOT(sendPing()));
+		ticker->start(5000);
+
+		g.mw->rtLast = MumbleProto::Reject_RejectType_None;
+
+		accUDP = accTCP = accClean;
+
+		uiVersion = 0;
+		qsRelease = QString();
+		qsOS = QString();
+		qsOSVersion = QString();
+
+		int ret = exec();
+		if (ret == -2) {
+			shouldTryNextTargetServer = true;
+		} else {
+			shouldTryNextTargetServer = false;
+		}
+
+		if (qusUdp) {
+			QMutexLocker qml(&qmUdp);
+
+	#ifdef Q_OS_WIN
+			if (hQoS != NULL) {
+				if (! QOSRemoveSocketFromFlow(hQoS, 0, dwFlowUDP, 0))
+					qWarning("ServerHandler: Failed to remove UDP from QoS");
+				dwFlowUDP = 0;
+			}
+	#endif
+			delete qusUdp;
+			qusUdp = NULL;
+		}
+
+		ticker->stop();
+
+		ConnectionPtr cptr(cConnection);
+		if (cptr) {
+			cptr->disconnectSocket(true);
+		}
+
+		cConnection.reset();
+		while (! cptr.unique()) {
+			msleep(100);
+		}
+		delete qtsSock;
+		delete tConnectionTimeoutTimer;
+	} while (shouldTryNextTargetServer && !qlAddresses.isEmpty());
 }
 
 #ifdef Q_OS_WIN
@@ -392,6 +450,10 @@ void ServerHandler::sendPing() {
 	ConnectionPtr connection(cConnection);
 	if (!connection)
 		return;
+
+	if (qtsSock->state() != QAbstractSocket::ConnectedState) {
+		return;
+	}
 
 	if (g.s.iMaxInFlightTCPPings >= 0 && iInFlightTCPPings >= g.s.iMaxInFlightTCPPings) {
 		serverConnectionClosed(QAbstractSocket::UnknownSocketError, tr("Server is not responding to TCP pings"));
@@ -519,6 +581,20 @@ void ServerHandler::serverConnectionClosed(QAbstractSocket::SocketError err, con
 	AudioOutputPtr ao = g.ao;
 	if (ao)
 		ao->wipe();
+
+	// Try next server in the list if possible.
+	// Otherwise, emit disconnect and exit with
+	// a normal status code.
+	if (!qlAddresses.isEmpty()) {
+		if (err == QAbstractSocket::ConnectionRefusedError || err == QAbstractSocket::SocketTimeoutError) {
+			qWarning("ServerHandler: connection attempt to %s:%i failed: %s (%li); trying next server....",
+						qPrintable(saTargetServer.host.toString()), static_cast<int>(saTargetServer.port),
+						qPrintable(reason), static_cast<long>(err));
+			exit(-2);
+			return;
+		}
+	}
+
 	emit disconnected(err, reason);
 	exit(0);
 }
@@ -538,6 +614,9 @@ void ServerHandler::serverConnectionStateChanged(QAbstractSocket::SocketState st
 		connect(tConnectionTimeoutTimer, SIGNAL(timeout()), this, SLOT(serverConnectionTimeoutOnConnect()));
 		tConnectionTimeoutTimer->setSingleShot(true);
 		tConnectionTimeoutTimer->start(30000);
+	} else if (state == QAbstractSocket::ConnectedState) {
+		// Start TLS handshake
+		qtsSock->startClientEncryption();
 	}
 }
 
@@ -574,8 +653,11 @@ void ServerHandler::serverConnectionConnected() {
 		mpv.set_version(version);
 	}
 
-	mpv.set_os(u8(OSInfo::getOS()));
-	mpv.set_os_version(u8(OSInfo::getOSDisplayableVersion()));
+	if (!g.s.bHideOS) {
+		mpv.set_os(u8(OSInfo::getOS()));
+		mpv.set_os_version(u8(OSInfo::getOSDisplayableVersion()));
+	}
+
 	sendMessage(mpv);
 
 	MumbleProto::Authenticate mpa;
@@ -645,7 +727,7 @@ void ServerHandler::serverConnectionConnected() {
 				addr.sin_addr.s_addr = htonl(qhaRemote.toIPv4Address());
 
 				dwFlowUDP = 0;
-				if (! QOSAddSocketToFlow(hQoS, qusUdp->socketDescriptor(), reinterpret_cast<sockaddr *>(&addr), QOSTrafficTypeVoice, QOS_NON_ADAPTIVE_FLOW, &dwFlowUDP))
+				if (! QOSAddSocketToFlow(hQoS, qusUdp->socketDescriptor(), reinterpret_cast<sockaddr *>(&addr), QOSTrafficTypeVoice, QOS_NON_ADAPTIVE_FLOW, reinterpret_cast<PQOS_FLOWID>(&dwFlowUDP)))
 					qWarning("ServerHandler: Failed to add UDP to QOS");
 			}
 #endif
@@ -781,7 +863,10 @@ void ServerHandler::setUserTexture(unsigned int uiSession, const QByteArray &qba
 		qir.setDevice(&qb);
 
 		QSize sz = qir.size();
-		sz.scale(600, 60, Qt::KeepAspectRatio);
+		const int TEX_MAX_WIDTH = 600;
+		const int TEX_MAX_HEIGHT = 60;
+		const int TEX_RGBA_SIZE = TEX_MAX_WIDTH*TEX_MAX_HEIGHT*4;
+		sz.scale(TEX_MAX_WIDTH, TEX_MAX_HEIGHT, Qt::KeepAspectRatio);
 		qir.setScaledSize(sz);
 
 		QImage tex = qir.read();
@@ -789,8 +874,8 @@ void ServerHandler::setUserTexture(unsigned int uiSession, const QByteArray &qba
 			return;
 		}
 
-		raw = QByteArray(600*60*4, 0);
-		QImage img(reinterpret_cast<unsigned char *>(raw.data()), 600, 60, QImage::Format_ARGB32);
+		raw = QByteArray(TEX_RGBA_SIZE, 0);
+		QImage img(reinterpret_cast<unsigned char *>(raw.data()), TEX_MAX_WIDTH, TEX_MAX_HEIGHT, QImage::Format_ARGB32);
 
 		QPainter imgp(&img);
 		imgp.setRenderHint(QPainter::Antialiasing);
@@ -798,7 +883,7 @@ void ServerHandler::setUserTexture(unsigned int uiSession, const QByteArray &qba
 		imgp.setCompositionMode(QPainter::CompositionMode_SourceOver);
 		imgp.drawImage(0, 0, tex);
 
-		texture = qCompress(QByteArray(reinterpret_cast<const char *>(img.bits()), 600*60*4));
+		texture = qCompress(QByteArray(reinterpret_cast<const char *>(img.bits()), TEX_RGBA_SIZE));
 	}
 
 	MumbleProto::UserState mpus;

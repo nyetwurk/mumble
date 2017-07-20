@@ -70,11 +70,13 @@ QString VoiceRecorder::sanitizeFilenameOrPathComponent(const QString &str) const
 	// and http://msdn.microsoft.com/en-us/library/aa365247(VS.85).aspx
 
 	// Make sure name doesn't end in "."
-	if (res.at(res.length() - 1) == QLatin1Char('.'))
-		if (res.length() == 255) // Prevents possible infinite recursion later on
+	if (res.at(res.length() - 1) == QLatin1Char('.')) {
+		if (res.length() == 255) { // Prevents possible infinite recursion later on
 			res[254] = QLatin1Char('_');
-		else
+		} else {
 			res = res.append(QLatin1Char('_'));
+		}
+	}
 
 	// Replace < > : " / \ | ? * as well as chr(0) to chr(31)
 	res = res.replace(QRegExp(QLatin1String("[<>:\"/\\\\|\\?\\*\\x00-\\x1F]")), QLatin1String("_"));
@@ -292,7 +294,7 @@ bool VoiceRecorder::ensureFileIsOpenedFor(SF_INFO& soundFileInfo, boost::shared_
 void VoiceRecorder::run() {
 	Q_ASSERT(!m_recording);
 	
-	if (g.sh && g.sh->uiVersion < 0201003)
+	if (g.sh && g.sh->uiVersion < 0x010203)
 		return;
 
 	SF_INFO soundFileInfo = createSoundFileInfo();
@@ -305,7 +307,7 @@ void VoiceRecorder::run() {
 		m_sleepLock.lock();
 		m_sleepCondition.wait(&m_sleepLock);
 
-		if (!m_recording || m_abort || (g.sh && g.sh->uiVersion < 0201003)) {
+		if (!m_recording || m_abort || (g.sh && g.sh->uiVersion < 0x010203)) {
 			m_sleepLock.unlock();
 			break;
 		}

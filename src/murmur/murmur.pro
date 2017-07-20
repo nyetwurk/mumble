@@ -4,6 +4,7 @@
 # Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 include(../mumble.pri)
+include(../../qmake/protoc.pri)
 
 DEFINES *= MURMUR
 TEMPLATE	=app
@@ -44,15 +45,14 @@ win32 {
   SOURCES *= Tray.cpp About.cpp
   HEADERS *= Tray.h About.h
   LIBS *= -luser32
-  QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)$$quote(mt.exe -nologo -updateresource:$(DESTDIR_TARGET);1 -manifest ../mumble/mumble.appcompat.manifest)
+  win32-msvc* {
+    QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)$$quote(mt.exe -nologo -updateresource:$(DESTDIR_TARGET);1 -manifest ../mumble/mumble.appcompat.manifest)
+  }
 }
 
 unix {
   contains(UNAME, Linux) {
     LIBS *= -lcap
-
-    # For MumbleSSL::qsslSanityCheck()
-    LIBS *= -ldl
   }
 
   CONFIG(static):!macx {
@@ -156,7 +156,7 @@ grpc {
 
 	GRPC_WRAPPER = MurmurRPC.proto
 	grpc_wrapper.output = MurmurRPC.proto.Wrapper.cpp
-	grpc_wrapper.commands = protoc --plugin=${DESTDIR}protoc-gen-murmur-grpcwrapper -I. --murmur-grpcwrapper_out=. MurmurRPC.proto
+	grpc_wrapper.commands = $${PROTOC} --plugin=${DESTDIR}protoc-gen-murmur-grpcwrapper -I. --murmur-grpcwrapper_out=. MurmurRPC.proto
 	grpc_wrapper.input = GRPC_WRAPPER
 	grpc_wrapper.variable_out =
 	QMAKE_EXTRA_COMPILERS += grpc_wrapper
@@ -199,14 +199,7 @@ bonjour {
 #
 # Can be disabled with no-qssldiffiehellmanparameters.
 !CONFIG(no-qssldiffiehellmanparameters):exists($$[QT_INSTALL_HEADERS]/QtNetwork/QSslDiffieHellmanParameters) {
-	# ...but only if we're inside a Mumble build environment for now.
-	# If someone decides to put a Mumble snapshot into a distro, this
-	# could break the build in the future, with newer versions of Qt,
-	# if the API of QSslDiffieHellmanParameters changes when it is
-	# upstreamed.
-	CONFIG(buildenv) {
-		DEFINES += USE_QSSLDIFFIEHELLMANPARAMETERS
-	}
+	DEFINES += USE_QSSLDIFFIEHELLMANPARAMETERS
 }
 
-include(../../symbols.pri)
+include(../../qmake/symbols.pri)
